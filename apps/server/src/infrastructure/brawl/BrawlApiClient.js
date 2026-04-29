@@ -15,7 +15,28 @@ class BrawlApiClient {
   }
 
   async getPlayerRankings({ country, limit }) {
-    return this.#request(`/rankings/${country}/players?limit=${limit}`);
+    return this.#requestWithFallback([
+      `/rankings/${country}/players?limit=${limit}`,
+      `/locations/${country}/rankings/players?limit=${limit}`
+    ]);
+  }
+
+  async getClubRankings({ country, limit }) {
+    return this.#requestWithFallback([
+      `/rankings/${country}/clubs?limit=${limit}`,
+      `/locations/${country}/rankings/clubs?limit=${limit}`
+    ]);
+  }
+
+  async getBrawlerRankings({ country, brawlerId, limit }) {
+    return this.#requestWithFallback([
+      `/rankings/${country}/brawlers/${brawlerId}?limit=${limit}`,
+      `/locations/${country}/rankings/brawlers/${brawlerId}?limit=${limit}`
+    ]);
+  }
+
+  async getBrawlers() {
+    return this.#request("/brawlers");
   }
 
   async #request(endpoint) {
@@ -43,6 +64,28 @@ class BrawlApiClient {
     }
 
     return payload;
+  }
+
+  async #requestWithFallback(endpoints) {
+    let lastNotFoundError = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        return await this.#request(endpoint);
+      } catch (error) {
+        if (error instanceof HttpError && error.statusCode === 404) {
+          lastNotFoundError = error;
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    if (lastNotFoundError) {
+      throw lastNotFoundError;
+    }
+
+    throw new HttpError(500, "BRAWL_API_ERROR", "No fallback endpoint could be resolved.");
   }
 
   #safeParseJson(text) {

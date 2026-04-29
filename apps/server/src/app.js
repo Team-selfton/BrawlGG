@@ -8,7 +8,12 @@ const { AuthService } = require("./application/services/AuthService");
 const { createGetHealthStatusUseCase } = require("./application/usecases/health/getHealthStatus");
 const { createGetPlayerProfileUseCase } = require("./application/usecases/game/getPlayerProfile");
 const { createGetPlayerBattlelogUseCase } = require("./application/usecases/game/getPlayerBattlelog");
+const { createGetPlayerOverviewUseCase } = require("./application/usecases/game/getPlayerOverview");
+const { createGetMultiPlayerOverviewUseCase } = require("./application/usecases/game/getMultiPlayerOverview");
 const { createGetPlayerRankingsUseCase } = require("./application/usecases/game/getPlayerRankings");
+const { createGetClubRankingsUseCase } = require("./application/usecases/game/getClubRankings");
+const { createGetBrawlerRankingsUseCase } = require("./application/usecases/game/getBrawlerRankings");
+const { createGetBrawlersUseCase } = require("./application/usecases/game/getBrawlers");
 const { createGetAuthStatusUseCase } = require("./application/usecases/auth/getAuthStatus");
 const { createStartOAuthLoginUseCase } = require("./application/usecases/auth/startOAuthLogin");
 const { createCompleteOAuthLoginUseCase } = require("./application/usecases/auth/completeOAuthLogin");
@@ -36,11 +41,17 @@ function createApp() {
   const useCases = {
     getHealthStatus: createGetHealthStatusUseCase({
       oauthClient,
-      requireLoginForApi: config.auth.requireLoginForApi
+      requireLoginForApi: config.auth.requireLoginForApi,
+      hasBrawlApiToken: Boolean(config.brawl.apiToken)
     }),
     getPlayerProfile: createGetPlayerProfileUseCase({ gameDataService }),
     getPlayerBattlelog: createGetPlayerBattlelogUseCase({ gameDataService }),
+    getPlayerOverview: createGetPlayerOverviewUseCase({ gameDataService }),
+    getMultiPlayerOverview: createGetMultiPlayerOverviewUseCase({ gameDataService }),
     getPlayerRankings: createGetPlayerRankingsUseCase({ gameDataService }),
+    getClubRankings: createGetClubRankingsUseCase({ gameDataService }),
+    getBrawlerRankings: createGetBrawlerRankingsUseCase({ gameDataService }),
+    getBrawlers: createGetBrawlersUseCase({ gameDataService }),
     getAuthStatus: createGetAuthStatusUseCase({ authService }),
     startOAuthLogin: createStartOAuthLoginUseCase({ authService }),
     completeOAuthLogin: createCompleteOAuthLoginUseCase({ authService }),

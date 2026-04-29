@@ -14,7 +14,7 @@ function createApiRouter({ useCases, sessionTokenService }) {
         return await handleAuthRoute(req, reqUrl, res, useCases, sessionTokenService);
       }
 
-      if (pathname.startsWith("/api/player") || pathname.startsWith("/api/rankings")) {
+      if (requiresAuth(pathname)) {
         try {
           useCases.ensureAuthenticated(req);
         } catch (error) {
@@ -29,16 +29,23 @@ function createApiRouter({ useCases, sessionTokenService }) {
         }
       }
 
+      if (pathname === "/api/players/multi") {
+        const multiResult = await useCases.getMultiPlayerOverview(reqUrl.searchParams.get("tags"));
+        return sendJson(res, 200, multiResult);
+      }
+
       if (pathname.startsWith("/api/player/")) {
         return await handlePlayerRoute(reqUrl, res, useCases);
       }
 
-      if (pathname === "/api/rankings/players") {
-        const rankings = await useCases.getPlayerRankings(
-          reqUrl.searchParams.get("country"),
-          reqUrl.searchParams.get("limit")
-        );
+      if (pathname.startsWith("/api/rankings/")) {
+        const rankings = await handleRankingRoute(reqUrl, useCases);
         return sendJson(res, 200, rankings);
+      }
+
+      if (pathname === "/api/brawlers") {
+        const brawlers = await useCases.getBrawlers();
+        return sendJson(res, 200, brawlers);
       }
 
       return sendJson(res, 404, { message: "API route not found." });
@@ -92,17 +99,51 @@ async function handlePlayerRoute(reqUrl, res, useCases) {
   const rawTag = parts[2];
   const section = parts[3];
 
+  if (section === "overview") {
+    const overview = await useCases.getPlayerOverview(rawTag);
+    return sendJson(res, 200, overview);
+  }
+
   if (section === "battlelog") {
     const battlelog = await useCases.getPlayerBattlelog(rawTag);
     return sendJson(res, 200, battlelog);
   }
 
-  if (section && section !== "battlelog") {
+  if (section && !["battlelog", "overview"].includes(section)) {
     return sendJson(res, 404, { message: "API route not found." });
   }
 
   const playerProfile = await useCases.getPlayerProfile(rawTag);
   return sendJson(res, 200, playerProfile);
+}
+
+async function handleRankingRoute(reqUrl, useCases) {
+  const pathname = reqUrl.pathname;
+  const country = reqUrl.searchParams.get("country");
+  const limit = reqUrl.searchParams.get("limit");
+
+  if (pathname === "/api/rankings/players") {
+    return useCases.getPlayerRankings(country, limit);
+  }
+
+  if (pathname === "/api/rankings/clubs") {
+    return useCases.getClubRankings(country, limit);
+  }
+
+  if (pathname === "/api/rankings/brawlers") {
+    return useCases.getBrawlerRankings(country, reqUrl.searchParams.get("brawlerId"), limit);
+  }
+
+  throw new HttpError(404, "NOT_FOUND", "Ranking route not found.");
+}
+
+function requiresAuth(pathname) {
+  return (
+    pathname.startsWith("/api/player") ||
+    pathname.startsWith("/api/players") ||
+    pathname.startsWith("/api/rankings") ||
+    pathname.startsWith("/api/brawlers")
+  );
 }
 
 function handleError(res, error) {
