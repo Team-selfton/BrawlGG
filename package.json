@@ -1,0 +1,14 @@
+{
+  "name": "brawlgg",
+  "version": "0.2.0",
+  "private": true,
+  "description": "BrawlGG - Clean architecture server and web view for Brawl Stars",
+  "scripts": {
+    "start": "node apps/server/src/index.js",
+    "dev": "node apps/server/src/index.js",
+    "start:legacy": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
