@@ -1,4 +1,5 @@
 import { fetchJson } from "../shared/apiClient.js";
+import { clearAuthTokens, getRefreshToken } from "../shared/authTokenStore.js";
 
 export async function loadHealthState() {
   try {
@@ -30,5 +31,18 @@ export function startOAuthLogin() {
 }
 
 export async function logout() {
-  return fetchJson("/api/auth/logout", { method: "POST" });
+  try {
+    const refreshToken = getRefreshToken();
+    const response = await fetchJson("/api/auth/logout", {
+      method: "POST",
+      body: {
+        refreshToken
+      }
+    });
+    clearAuthTokens();
+    return response;
+  } catch (error) {
+    clearAuthTokens();
+    throw error;
+  }
 }
