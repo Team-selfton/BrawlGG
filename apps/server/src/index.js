@@ -1,4 +1,7 @@
+const { loadDotEnv } = require("./config/loadDotEnv");
 const { createApp } = require("./app");
+
+loadDotEnv();
 
 const { server, config } = createApp();
 
