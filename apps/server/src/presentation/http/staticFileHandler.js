@@ -16,7 +16,7 @@ const MIME_TYPES = {
 
 function createStaticFileHandler({ webRootDir }) {
   return async function serveStatic(reqUrl, res) {
-    const relativePath = reqUrl.pathname === "/" ? "/public/index.html" : reqUrl.pathname;
+    const relativePath = resolveRelativePath(reqUrl.pathname);
     const resolvedPath = path.normalize(path.join(webRootDir, relativePath));
 
     if (!resolvedPath.startsWith(webRootDir)) {
@@ -41,6 +41,18 @@ function createStaticFileHandler({ webRootDir }) {
       sendNotFound(res);
     }
   };
+}
+
+function resolveRelativePath(pathname) {
+  if (pathname === "/") {
+    return "/public/index.html";
+  }
+
+  if (pathname === "/docs" || pathname === "/docs/") {
+    return "/public/swagger.html";
+  }
+
+  return pathname;
 }
 
 module.exports = { createStaticFileHandler };

@@ -22,6 +22,7 @@ const { createLogoutUseCase } = require("./application/usecases/auth/logout");
 const { createApiRouter } = require("./presentation/http/apiRouter");
 const { createStaticFileHandler } = require("./presentation/http/staticFileHandler");
 const { createServer } = require("./presentation/http/createServer");
+const { createOpenApiSpec } = require("./presentation/http/openApiSpec");
 
 function createApp() {
   const config = loadConfig(process.env);
@@ -37,6 +38,10 @@ function createApp() {
 
   const gameDataService = new GameDataService({ brawlApiClient });
   const authService = new AuthService({ oauthClient, oauthStateStore, sessionTokenService });
+  const openApiSpec = createOpenApiSpec({
+    appBaseUrl: config.server.appBaseUrl,
+    cookieName: config.auth.cookieName
+  });
 
   const useCases = {
     getHealthStatus: createGetHealthStatusUseCase({
@@ -62,7 +67,7 @@ function createApp() {
     logout: createLogoutUseCase()
   };
 
-  const routeApi = createApiRouter({ useCases, sessionTokenService });
+  const routeApi = createApiRouter({ useCases, sessionTokenService, openApiSpec });
   const serveStatic = createStaticFileHandler({ webRootDir: config.server.webRootDir });
   const server = createServer({ routeApi, serveStatic });
 

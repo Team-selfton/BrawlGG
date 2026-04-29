@@ -1,10 +1,18 @@
 const { HttpError } = require("../../domain/errors/HttpError");
 const { sendJson, sendRedirect } = require("./httpResponse");
 
-function createApiRouter({ useCases, sessionTokenService }) {
+function createApiRouter({ useCases, sessionTokenService, openApiSpec }) {
   return async function routeApi(req, reqUrl, res) {
     try {
       const pathname = reqUrl.pathname;
+
+      if (pathname === "/api/docs") {
+        return sendRedirect(res, "/docs");
+      }
+
+      if (pathname === "/api/docs/openapi.json") {
+        return sendJson(res, 200, openApiSpec);
+      }
 
       if (pathname === "/api/health") {
         return sendJson(res, 200, useCases.getHealthStatus());

@@ -79,6 +79,7 @@ npm run dev
 ## API 엔드포인트
 
 - `GET /api/health`
+- `GET /api/docs/openapi.json` (OpenAPI 명세 JSON)
 - `GET /api/player/:tag`
 - `GET /api/player/:tag/overview`
 - `GET /api/player/:tag/battlelog`
@@ -91,6 +92,11 @@ npm run dev
 - `GET /api/auth/supercell/start?return_to=/`
 - `GET /api/auth/supercell/callback`
 - `POST /api/auth/logout`
+
+## Swagger 문서
+
+- Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)
+- OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
 
 ### 빠른 확인 예시
 
