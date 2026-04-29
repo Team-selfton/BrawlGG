@@ -108,10 +108,12 @@ h2 {
 .row {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 input,
 select,
+textarea,
 button {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -122,9 +124,16 @@ button {
 }
 
 input,
-select {
+select,
+textarea {
   flex: 1;
   padding: 0.75rem;
+}
+
+textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
 }
 
 button {
@@ -201,6 +210,12 @@ button:disabled {
   gap: 0.5rem;
 }
 
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
 .stat {
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -226,6 +241,32 @@ button:disabled {
   display: grid;
   gap: 0.5rem;
   margin-top: 0.8rem;
+}
+
+.sub-panel {
+  margin-top: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem;
+  background: rgba(5, 14, 24, 0.56);
+}
+
+.sub-panel h4 {
+  margin: 0 0 0.5rem;
+  color: var(--text-muted);
+}
+
+.compact-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.compact-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 .battle-item {
@@ -260,6 +301,44 @@ button:disabled {
 .ranking-list .name {
   color: var(--accent-2);
   font-weight: 700;
+}
+
+.card-wide {
+  grid-column: 1 / -1;
+}
+
+.hidden {
+  display: none;
+}
+
+.multi-list {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.multi-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem;
+  background: rgba(7, 16, 29, 0.58);
+}
+
+.multi-item p {
+  margin: 0.28rem 0 0;
+  color: var(--text-muted);
+}
+
+.multi-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.error-item {
+  border-color: rgba(255, 122, 107, 0.4);
 }
 
 .sr-only {

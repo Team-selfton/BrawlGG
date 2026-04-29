@@ -5,12 +5,14 @@ export async function loadHealthState() {
     const health = await fetchJson("/api/health");
     return {
       requireLoginForApi: Boolean(health.requireLoginForApi),
-      oauthEnabled: Boolean(health.oauthEnabled)
+      oauthEnabled: Boolean(health.oauthEnabled),
+      brawlApiTokenConfigured: Boolean(health.brawlApiTokenConfigured)
     };
   } catch {
     return {
       requireLoginForApi: false,
-      oauthEnabled: false
+      oauthEnabled: false,
+      brawlApiTokenConfigured: false
     };
   }
 }

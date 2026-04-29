@@ -2,10 +2,14 @@ import {
   applyAuthButtons,
   applyInteractionLock,
   clearPlayerPanel,
+  renderBrawlerOptions,
+  renderMultiResults,
   renderPlayer,
   renderRankingMessage,
   renderRankings,
   setAuthStatus,
+  setBrawlerFilterVisibility,
+  setMultiStatus,
   setStatus
 } from "./presentation/renderers.js";
 import { getElements } from "./presentation/elements.js";
@@ -15,15 +19,23 @@ import {
   logout,
   startOAuthLogin
 } from "./application/authApplication.js";
-import { loadPlayerOverview, loadRankings } from "./application/gameApplication.js";
+import {
+  loadBrawlers,
+  loadMultiPlayerOverview,
+  loadPlayerOverview,
+  loadRankings
+} from "./application/gameApplication.js";
 
 const elements = getElements();
 
 const state = {
   requireLoginForApi: false,
+  brawlApiTokenConfigured: false,
   oauthEnabled: false,
   authenticated: false,
-  user: null
+  user: null,
+  brawlers: [],
+  brawlersLoaded: false
 };
 
 function syncAuthButtons() {
@@ -33,19 +45,40 @@ function syncAuthButtons() {
   });
 }
 
-function syncInteractionLock() {
-  const locked = state.requireLoginForApi && !state.authenticated;
-  applyInteractionLock(elements, locked);
+function isApiAccessLocked() {
+  const lockedByAuth = state.requireLoginForApi && !state.authenticated;
+  const lockedByToken = !state.brawlApiTokenConfigured;
+  return {
+    lockedByAuth,
+    lockedByToken,
+    locked: lockedByAuth || lockedByToken
+  };
+}
 
-  if (locked) {
+function syncInteractionLock() {
+  const { lockedByAuth, lockedByToken, locked } = isApiAccessLocked();
+  applyInteractionLock(elements, locked);
+  syncBrawlerFilterVisibility();
+
+  if (lockedByToken) {
+    setStatus(elements, "서버에 BRAWL_API_TOKEN을 설정하면 조회를 시작할 수 있습니다.", true);
+    setMultiStatus(elements, "서버에 BRAWL_API_TOKEN이 필요합니다.", true);
+  } else if (lockedByAuth) {
     setStatus(elements, "로그인 후 전적/랭킹 조회가 가능합니다.");
+    setMultiStatus(elements, "로그인 후 멀티검색을 사용할 수 있습니다.");
   }
+}
+
+function syncBrawlerFilterVisibility() {
+  const isBrawlerRanking = elements.rankingTypeSelect.value === "brawlers";
+  setBrawlerFilterVisibility(elements, isBrawlerRanking);
 }
 
 async function refreshHealthAndAuth() {
   const healthState = await loadHealthState();
   state.requireLoginForApi = healthState.requireLoginForApi;
   state.oauthEnabled = healthState.oauthEnabled;
+  state.brawlApiTokenConfigured = healthState.brawlApiTokenConfigured;
 
   try {
     const authState = await loadAuthState();
@@ -69,10 +102,36 @@ async function refreshHealthAndAuth() {
   syncInteractionLock();
 }
 
+async function loadBrawlerCatalogIfAvailable() {
+  if (state.brawlersLoaded) return;
+
+  const { locked } = isApiAccessLocked();
+  if (locked) return;
+
+  try {
+    const response = await loadBrawlers();
+    state.brawlers = Array.isArray(response.items) ? response.items : [];
+    state.brawlersLoaded = true;
+
+    if (state.brawlers.length) {
+      renderBrawlerOptions(elements, state.brawlers);
+    }
+  } catch {
+    state.brawlers = [];
+    state.brawlersLoaded = false;
+  }
+}
+
 async function onSubmitPlayerSearch(event) {
   event.preventDefault();
 
-  if (state.requireLoginForApi && !state.authenticated) {
+  const { lockedByAuth, lockedByToken } = isApiAccessLocked();
+  if (lockedByToken) {
+    setStatus(elements, "서버에 BRAWL_API_TOKEN이 없어 조회할 수 없습니다.", true);
+    return;
+  }
+
+  if (lockedByAuth) {
     setStatus(elements, "로그인 후 조회할 수 있습니다.", true);
     return;
   }
@@ -81,8 +140,8 @@ async function onSubmitPlayerSearch(event) {
   clearPlayerPanel(elements);
 
   try {
-    const { player, battlelog } = await loadPlayerOverview(elements.input.value);
-    renderPlayer(elements, player, battlelog);
+    const overview = await loadPlayerOverview(elements.input.value);
+    renderPlayer(elements, overview);
     setStatus(elements, "조회 완료");
   } catch (error) {
     setStatus(elements, error.message || "플레이어 조회 실패", true);
@@ -90,24 +149,78 @@ async function onSubmitPlayerSearch(event) {
 }
 
 async function onLoadRankings() {
-  if (state.requireLoginForApi && !state.authenticated) {
+  const { lockedByAuth, lockedByToken } = isApiAccessLocked();
+  if (lockedByToken) {
+    renderRankingMessage(elements, "서버에 BRAWL_API_TOKEN이 설정되지 않았습니다.");
+    return;
+  }
+
+  if (lockedByAuth) {
     renderRankingMessage(elements, "로그인 후 랭킹 조회가 가능합니다.");
     return;
   }
+
+  const rankingType = elements.rankingTypeSelect.value || "players";
+  const brawlerId = rankingType === "brawlers" ? elements.brawlerSelect.value : "";
 
   elements.rankingButton.disabled = true;
   elements.rankingButton.textContent = "불러오는 중...";
   elements.rankingList.innerHTML = "";
 
   try {
-    const response = await loadRankings(elements.countrySelect.value);
-    renderRankings(elements, response.items || []);
+    if (rankingType === "brawlers") {
+      await loadBrawlerCatalogIfAvailable();
+    }
+
+    const response = await loadRankings({
+      type: rankingType,
+      country: elements.countrySelect.value,
+      brawlerId
+    });
+    renderRankings(elements, response.items || [], rankingType);
   } catch (error) {
     renderRankingMessage(elements, error.message || "랭킹 조회 실패");
   } finally {
-    elements.rankingButton.disabled = state.requireLoginForApi && !state.authenticated;
+    elements.rankingButton.disabled = isApiAccessLocked().locked;
     elements.rankingButton.textContent = "랭킹 불러오기";
   }
+}
+
+async function onSubmitMultiSearch(event) {
+  event.preventDefault();
+
+  const { lockedByAuth, lockedByToken } = isApiAccessLocked();
+  if (lockedByToken) {
+    setMultiStatus(elements, "서버에 BRAWL_API_TOKEN이 없어 조회할 수 없습니다.", true);
+    return;
+  }
+  if (lockedByAuth) {
+    setMultiStatus(elements, "로그인 후 멀티검색을 사용할 수 있습니다.", true);
+    return;
+  }
+
+  elements.multiButton.disabled = true;
+  elements.multiButton.textContent = "조회 중...";
+  elements.multiList.innerHTML = "";
+  setMultiStatus(elements, "멀티검색 로딩 중...");
+
+  try {
+    const response = await loadMultiPlayerOverview(elements.multiInput.value);
+    renderMultiResults(elements, response);
+    setMultiStatus(
+      elements,
+      `완료: 성공 ${response.successCount ?? 0} / 실패 ${response.failedCount ?? 0}`
+    );
+  } catch (error) {
+    setMultiStatus(elements, error.message || "멀티검색 실패", true);
+  } finally {
+    elements.multiButton.disabled = isApiAccessLocked().locked;
+    elements.multiButton.textContent = "멀티 검색";
+  }
+}
+
+function onRankingTypeChange() {
+  syncBrawlerFilterVisibility();
 }
 
 async function onLogout() {
@@ -117,7 +230,9 @@ async function onLogout() {
     state.user = null;
     clearPlayerPanel(elements);
     elements.rankingList.innerHTML = "";
+    elements.multiList.innerHTML = "";
     setStatus(elements, "로그아웃되었습니다.");
+    setMultiStatus(elements, "로그아웃되었습니다.");
   } catch {
     setStatus(elements, "로그아웃 실패", true);
   }
@@ -128,16 +243,20 @@ async function onLogout() {
 
 function bindEvents() {
   elements.form.addEventListener("submit", onSubmitPlayerSearch);
+  elements.multiForm.addEventListener("submit", onSubmitMultiSearch);
   elements.rankingButton.addEventListener("click", onLoadRankings);
+  elements.rankingTypeSelect.addEventListener("change", onRankingTypeChange);
   elements.loginButton.addEventListener("click", startOAuthLogin);
   elements.logoutButton.addEventListener("click", onLogout);
 }
 
 async function bootstrap() {
   bindEvents();
+  syncBrawlerFilterVisibility();
   await refreshHealthAndAuth();
+  await loadBrawlerCatalogIfAvailable();
 
-  if (!state.requireLoginForApi || state.authenticated) {
+  if (!isApiAccessLocked().locked) {
     await onLoadRankings();
   }
 }

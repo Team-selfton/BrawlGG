@@ -50,6 +50,12 @@
         <section class="card">
           <h2>글로벌/국가 랭킹</h2>
           <div class="row">
+            <label for="ranking-type" class="sr-only">랭킹 타입</label>
+            <select id="ranking-type">
+              <option value="players">Players</option>
+              <option value="clubs">Clubs</option>
+              <option value="brawlers">Brawler Leaderboard</option>
+            </select>
             <label for="country-select" class="sr-only">국가 선택</label>
             <select id="country-select">
               <option value="global">Global</option>
@@ -59,9 +65,28 @@
               <option value="de">Germany</option>
               <option value="fr">France</option>
             </select>
+            <label for="brawler-select" class="sr-only">브롤러 선택</label>
+            <select id="brawler-select" class="hidden">
+              <option value="16000000">Shelly</option>
+            </select>
             <button id="load-ranking" type="button">랭킹 불러오기</button>
           </div>
           <ol id="ranking-list" class="ranking-list"></ol>
+        </section>
+
+        <section class="card card-wide">
+          <h2>멀티 검색 (Multi-Search)</h2>
+          <form id="multi-form" class="search-form">
+            <label for="multi-input">여러 플레이어 태그</label>
+            <textarea
+              id="multi-input"
+              rows="3"
+              placeholder="#2PP, #8Q8, #YQ9U ... (콤마/공백 구분)"
+            ></textarea>
+            <button id="multi-button" type="submit">멀티 검색</button>
+          </form>
+          <p id="multi-status" class="status">여러 태그를 한 번에 조회해 최근 성과를 비교하세요.</p>
+          <ul id="multi-list" class="multi-list"></ul>
         </section>
       </main>
     </div>
