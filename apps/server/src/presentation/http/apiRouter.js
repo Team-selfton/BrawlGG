@@ -1,7 +1,7 @@
 const { HttpError } = require("../../domain/errors/HttpError");
-const { sendJson, sendRedirect } = require("./httpResponse");
+const { sendJson, sendRedirect, sendHtml } = require("./httpResponse");
 
-function createApiRouter({ useCases, sessionTokenService, openApiSpec }) {
+function createApiRouter({ useCases, openApiSpec }) {
   return async function routeApi(req, reqUrl, res) {
     try {
       const pathname = reqUrl.pathname;
@@ -19,7 +19,7 @@ function createApiRouter({ useCases, sessionTokenService, openApiSpec }) {
       }
 
       if (pathname.startsWith("/api/auth/")) {
-        return await handleAuthRoute(req, reqUrl, res, useCases, sessionTokenService);
+        return await handleAuthRoute(req, reqUrl, res, useCases);
       }
 
       if (requiresAuth(pathname)) {
@@ -63,7 +63,7 @@ function createApiRouter({ useCases, sessionTokenService, openApiSpec }) {
   };
 }
 
-async function handleAuthRoute(req, reqUrl, res, useCases, sessionTokenService) {
+async function handleAuthRoute(req, reqUrl, res, useCases) {
   const pathname = reqUrl.pathname;
 
   if (pathname === "/api/auth/me") {
@@ -75,10 +75,22 @@ async function handleAuthRoute(req, reqUrl, res, useCases, sessionTokenService) 
       return sendJson(res, 405, { message: "Method not allowed." });
     }
 
-    const secure = isSecureRequest(req);
-    const logoutResult = useCases.logout();
-    res.setHeader("Set-Cookie", sessionTokenService.buildClearCookieHeader(secure));
+    const body = req.method === "POST" ? await readJsonBody(req) : {};
+    const logoutResult = useCases.logout({
+      req,
+      refreshToken: body.refreshToken
+    });
     return sendJson(res, 200, logoutResult);
+  }
+
+  if (pathname === "/api/auth/refresh") {
+    if (req.method !== "POST") {
+      return sendJson(res, 405, { message: "Method not allowed." });
+    }
+
+    const body = await readJsonBody(req);
+    const refreshed = useCases.refreshTokens(body.refreshToken);
+    return sendJson(res, 200, refreshed);
   }
 
   if (pathname === "/api/auth/supercell/start") {
@@ -94,9 +106,8 @@ async function handleAuthRoute(req, reqUrl, res, useCases, sessionTokenService) 
       state: reqUrl.searchParams.get("state")
     });
 
-    const secure = isSecureRequest(req);
-    res.setHeader("Set-Cookie", sessionTokenService.buildSetCookieHeader(callbackResult.sessionToken, secure));
-    return sendRedirect(res, callbackResult.returnTo || "/");
+    const html = buildOAuthCallbackPage(callbackResult);
+    return sendHtml(res, 200, html);
   }
 
   return sendJson(res, 404, { message: "Auth route not found." });
@@ -154,6 +165,79 @@ function requiresAuth(pathname) {
   );
 }
 
+async function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let raw = "";
+    let done = false;
+
+    function finishWithError(error) {
+      if (done) return;
+      done = true;
+      reject(error);
+    }
+
+    function finishWithValue(value) {
+      if (done) return;
+      done = true;
+      resolve(value);
+    }
+
+    req.on("data", (chunk) => {
+      raw += chunk;
+      if (raw.length > 1024 * 1024) {
+        finishWithError(new HttpError(413, "PAYLOAD_TOO_LARGE", "Request body is too large."));
+      }
+    });
+    req.on("end", () => {
+      if (done) return;
+      if (!raw) {
+        finishWithValue({});
+        return;
+      }
+
+      try {
+        finishWithValue(JSON.parse(raw));
+      } catch {
+        finishWithError(new HttpError(400, "INVALID_JSON", "Request body must be valid JSON."));
+      }
+    });
+    req.on("error", (error) => finishWithError(error));
+  });
+}
+
+function buildOAuthCallbackPage(callbackResult) {
+  const tokenPayload = {
+    tokenType: callbackResult.tokenType,
+    accessToken: callbackResult.accessToken,
+    refreshToken: callbackResult.refreshToken,
+    expiresIn: callbackResult.expiresIn
+  };
+
+  const serializedPayload = JSON.stringify(tokenPayload);
+  const safePayloadLiteral = JSON.stringify(serializedPayload);
+  const safeReturnTo = JSON.stringify(callbackResult.returnTo || "/");
+
+  return `<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrawlGG OAuth Complete</title>
+  </head>
+  <body>
+    <p>로그인 처리 중입니다...</p>
+    <script>
+      (function () {
+        var storageKey = "brawlgg_auth_tokens";
+        var payload = JSON.parse(${safePayloadLiteral});
+        localStorage.setItem(storageKey, JSON.stringify(payload));
+        window.location.replace(${safeReturnTo});
+      })();
+    </script>
+  </body>
+</html>`;
+}
+
 function handleError(res, error) {
   if (error instanceof HttpError) {
     return sendJson(res, error.statusCode, {
@@ -167,14 +251,6 @@ function handleError(res, error) {
     reason: "INTERNAL_ERROR",
     message: error instanceof Error ? error.message : "Unknown server error."
   });
-}
-
-function isSecureRequest(req) {
-  const forwardedProto = typeof req.headers["x-forwarded-proto"] === "string"
-    ? req.headers["x-forwarded-proto"].toLowerCase()
-    : "";
-
-  return forwardedProto === "https" || Boolean(req.socket && req.socket.encrypted);
 }
 
 module.exports = { createApiRouter };

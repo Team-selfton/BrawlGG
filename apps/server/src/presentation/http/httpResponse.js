@@ -8,6 +8,11 @@ function sendRedirect(res, location, headers = {}) {
   res.end();
 }
 
+function sendHtml(res, statusCode, html) {
+  res.writeHead(statusCode, { "Content-Type": "text/html; charset=utf-8" });
+  res.end(html);
+}
+
 function sendNotFound(res) {
   sendJson(res, 404, { message: "Not found." });
 }
@@ -15,5 +20,6 @@ function sendNotFound(res) {
 module.exports = {
   sendJson,
   sendRedirect,
+  sendHtml,
   sendNotFound
 };
