@@ -12,7 +12,7 @@ apps/
     src/
       domain/           # 비즈니스 규칙, 에러, 순수 함수
       application/      # 유스케이스/서비스
-      infrastructure/   # 외부 API, OAuth, 세션 구현체
+      infrastructure/   # 외부 API, OAuth, JWT 인증 구현체
       presentation/     # HTTP 라우팅/응답/정적 파일 서빙
   web/
     public/             # 정적 HTML/CSS
@@ -29,7 +29,7 @@ apps/
 - 멀티 태그 동시 조회 (Multi-Search)
 - 국가/글로벌 랭킹 조회 (플레이어/클럽/브롤러)
 - Supercell OAuth2 (Authorization Code + PKCE)
-- HttpOnly 세션 쿠키 인증
+- JWT Access/Refresh 토큰 인증 + 재발급
 - API 로그인 필수화 옵션 (`REQUIRE_LOGIN_FOR_API=true`)
 
 ## 실행
@@ -66,14 +66,16 @@ npm run dev
 
 - `BRAWL_API_TOKEN`: Brawl Stars API 토큰
 - `REQUIRE_LOGIN_FOR_API`: API 요청에 로그인 필수 여부
-- `SESSION_SECRET`: 세션 서명 키
+- `JWT_SECRET`: JWT 서명 키
 - `SUPERCELL_OAUTH_*`: OAuth 제공자 설정
 
 추가 옵션:
 
 - `BRAWL_API_BASE_URL`
-- `SESSION_COOKIE_NAME`
-- `SESSION_TTL_SEC`
+- `JWT_ISSUER`
+- `JWT_AUDIENCE`
+- `JWT_ACCESS_TTL_SEC`
+- `JWT_REFRESH_TTL_SEC`
 - `OAUTH_STATE_TTL_MS`
 
 ## API 엔드포인트
@@ -89,6 +91,7 @@ npm run dev
 - `GET /api/rankings/brawlers?country=global&brawlerId=16000000&limit=20`
 - `GET /api/brawlers`
 - `GET /api/auth/me`
+- `POST /api/auth/refresh`
 - `GET /api/auth/supercell/start?return_to=/`
 - `GET /api/auth/supercell/callback`
 - `POST /api/auth/logout`
@@ -97,6 +100,13 @@ npm run dev
 
 - Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)
 - OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
+
+## 인증 구조 (JWT)
+
+1. `/api/auth/supercell/start`로 로그인 시작
+2. OAuth 콜백에서 `accessToken` + `refreshToken` 발급
+3. API 호출 시 `Authorization: Bearer <accessToken>` 사용
+4. 만료 시 `POST /api/auth/refresh`로 재발급
 
 ### 빠른 확인 예시
 
