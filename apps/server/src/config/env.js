@@ -11,12 +11,12 @@ function loadConfig(env = process.env) {
   const host = env.HOST || "127.0.0.1";
   const appBaseUrl = env.APP_BASE_URL || `http://localhost:${port}`;
 
-  const sessionSecret =
-    env.SESSION_SECRET ||
+  const jwtSecret =
+    env.JWT_SECRET ||
     crypto.createHash("sha256").update(`brawlgg-dev-${Date.now()}`).digest("hex");
 
-  if (!env.SESSION_SECRET) {
-    console.warn("[warn] SESSION_SECRET is not set. Development-only volatile secret is used.");
+  if (!env.JWT_SECRET) {
+    console.warn("[warn] JWT_SECRET is not set. Development-only volatile secret is used.");
   }
 
   const oauth = {
@@ -50,9 +50,13 @@ function loadConfig(env = process.env) {
     },
     auth: {
       requireLoginForApi: toBoolean(env.REQUIRE_LOGIN_FOR_API || "false", false),
-      cookieName: env.SESSION_COOKIE_NAME || "brawlgg_session",
-      sessionTtlSec: Math.max(300, Number(env.SESSION_TTL_SEC || 60 * 60 * 24 * 7)),
-      sessionSecret,
+      jwt: {
+        secret: jwtSecret,
+        issuer: env.JWT_ISSUER || "brawlgg",
+        audience: env.JWT_AUDIENCE || appBaseUrl,
+        accessTokenTtlSec: Math.max(60, Number(env.JWT_ACCESS_TTL_SEC || 60 * 15)),
+        refreshTokenTtlSec: Math.max(300, Number(env.JWT_REFRESH_TTL_SEC || 60 * 60 * 24 * 14))
+      },
       oauth
     }
   };

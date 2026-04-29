@@ -1,8 +1,9 @@
 const { loadConfig } = require("./config/env");
 const { BrawlApiClient } = require("./infrastructure/brawl/BrawlApiClient");
 const { OAuthClient } = require("./infrastructure/oauth/OAuthClient");
-const { SessionTokenService } = require("./infrastructure/session/SessionTokenService");
 const { MemoryOAuthStateStore } = require("./infrastructure/session/MemoryOAuthStateStore");
+const { JwtTokenService } = require("./infrastructure/auth/JwtTokenService");
+const { MemoryRefreshSessionStore } = require("./infrastructure/auth/MemoryRefreshSessionStore");
 const { GameDataService } = require("./application/services/GameDataService");
 const { AuthService } = require("./application/services/AuthService");
 const { createGetHealthStatusUseCase } = require("./application/usecases/health/getHealthStatus");
@@ -17,6 +18,7 @@ const { createGetBrawlersUseCase } = require("./application/usecases/game/getBra
 const { createGetAuthStatusUseCase } = require("./application/usecases/auth/getAuthStatus");
 const { createStartOAuthLoginUseCase } = require("./application/usecases/auth/startOAuthLogin");
 const { createCompleteOAuthLoginUseCase } = require("./application/usecases/auth/completeOAuthLogin");
+const { createRefreshTokensUseCase } = require("./application/usecases/auth/refreshTokens");
 const { createEnsureAuthenticatedUseCase } = require("./application/usecases/auth/ensureAuthenticated");
 const { createLogoutUseCase } = require("./application/usecases/auth/logout");
 const { createApiRouter } = require("./presentation/http/apiRouter");
@@ -29,18 +31,20 @@ function createApp() {
 
   const brawlApiClient = new BrawlApiClient(config.brawl);
   const oauthClient = new OAuthClient(config.auth.oauth);
-  const sessionTokenService = new SessionTokenService({
-    sessionSecret: config.auth.sessionSecret,
-    sessionTtlSec: config.auth.sessionTtlSec,
-    cookieName: config.auth.cookieName
-  });
+  const jwtTokenService = new JwtTokenService(config.auth.jwt);
+  const refreshSessionStore = new MemoryRefreshSessionStore();
   const oauthStateStore = new MemoryOAuthStateStore({ ttlMs: config.auth.oauth.stateTtlMs });
 
   const gameDataService = new GameDataService({ brawlApiClient });
-  const authService = new AuthService({ oauthClient, oauthStateStore, sessionTokenService });
+  const authService = new AuthService({
+    oauthClient,
+    oauthStateStore,
+    jwtTokenService,
+    refreshSessionStore
+  });
   const openApiSpec = createOpenApiSpec({
     appBaseUrl: config.server.appBaseUrl,
-    cookieName: config.auth.cookieName
+    accessTokenTtlSec: config.auth.jwt.accessTokenTtlSec
   });
 
   const useCases = {
@@ -60,14 +64,15 @@ function createApp() {
     getAuthStatus: createGetAuthStatusUseCase({ authService }),
     startOAuthLogin: createStartOAuthLoginUseCase({ authService }),
     completeOAuthLogin: createCompleteOAuthLoginUseCase({ authService }),
+    refreshTokens: createRefreshTokensUseCase({ authService }),
     ensureAuthenticated: createEnsureAuthenticatedUseCase({
       authService,
       requireLoginForApi: config.auth.requireLoginForApi
     }),
-    logout: createLogoutUseCase()
+    logout: createLogoutUseCase({ authService })
   };
 
-  const routeApi = createApiRouter({ useCases, sessionTokenService, openApiSpec });
+  const routeApi = createApiRouter({ useCases, openApiSpec });
   const serveStatic = createStaticFileHandler({ webRootDir: config.server.webRootDir });
   const server = createServer({ routeApi, serveStatic });
 

@@ -1,9 +1,6 @@
-function createLogoutUseCase() {
-  return function logout() {
-    return {
-      ok: true,
-      message: "Logged out"
-    };
+function createLogoutUseCase({ authService }) {
+  return function logout(params) {
+    return authService.logout(params);
   };
 }
 

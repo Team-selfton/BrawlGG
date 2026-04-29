@@ -2,23 +2,26 @@ const crypto = require("node:crypto");
 const { HttpError } = require("../../domain/errors/HttpError");
 
 class AuthService {
-  constructor({ oauthClient, oauthStateStore, sessionTokenService }) {
+  constructor({ oauthClient, oauthStateStore, jwtTokenService, refreshSessionStore }) {
     this.oauthClient = oauthClient;
     this.oauthStateStore = oauthStateStore;
-    this.sessionTokenService = sessionTokenService;
+    this.jwtTokenService = jwtTokenService;
+    this.refreshSessionStore = refreshSessionStore;
   }
 
   getAuthStatus(req) {
-    const session = this.sessionTokenService.getSessionFromRequest(req);
+    const accessPayload = this.jwtTokenService.getAccessPayloadFromRequest(req);
+
     return {
-      authenticated: Boolean(session),
+      authenticated: Boolean(accessPayload),
       oauthEnabled: this.oauthClient.enabled,
-      user: session
+      tokenType: "Bearer",
+      user: accessPayload
         ? {
-            sub: session.sub,
-            name: session.name,
-            email: session.email,
-            provider: session.provider
+            sub: accessPayload.sub,
+            name: accessPayload.name,
+            email: accessPayload.email,
+            provider: accessPayload.provider
           }
         : null
     };
@@ -59,23 +62,128 @@ class AuthService {
     });
 
     const profile = await this.oauthClient.resolveUserProfile(tokenPayload);
-    const sessionToken = this.sessionTokenService.createSessionToken(profile);
+    const tokenPair = this.#issueTokenPair({
+      user: {
+        sub: profile.sub,
+        name: profile.name,
+        email: profile.email,
+        provider: "supercell"
+      }
+    });
 
     return {
-      sessionToken,
-      returnTo: stateData.returnTo || "/"
+      returnTo: stateData.returnTo || "/",
+      ...tokenPair
+    };
+  }
+
+  refreshTokens(rawRefreshToken) {
+    if (!rawRefreshToken || typeof rawRefreshToken !== "string") {
+      throw new HttpError(400, "MISSING_REFRESH_TOKEN", "refreshToken is required.");
+    }
+
+    const refreshPayload = this.jwtTokenService.verifyRefreshToken(rawRefreshToken);
+    if (!refreshPayload) {
+      throw new HttpError(401, "INVALID_REFRESH_TOKEN", "Refresh token is invalid or expired.");
+    }
+
+    const nextRefreshTokenId = this.jwtTokenService.createRefreshTokenId();
+    const nextRefreshToken = this.jwtTokenService.createRefreshToken(
+      {
+        sub: refreshPayload.sub,
+        name: refreshPayload.name,
+        email: refreshPayload.email,
+        provider: refreshPayload.provider
+      },
+      refreshPayload.sid,
+      nextRefreshTokenId
+    );
+    const nextRefreshPayload = this.jwtTokenService.verifyRefreshToken(nextRefreshToken);
+    if (!nextRefreshPayload) {
+      throw new HttpError(500, "TOKEN_ISSUE_FAILED", "Failed to issue refresh token.");
+    }
+
+    const rotated = this.refreshSessionStore.rotate({
+      sessionId: refreshPayload.sid,
+      currentTokenId: refreshPayload.jti,
+      nextTokenId: nextRefreshTokenId,
+      nextExpiresAtSec: nextRefreshPayload.exp
+    });
+    if (!rotated) {
+      throw new HttpError(401, "INVALID_REFRESH_TOKEN", "Refresh token has been rotated or revoked.");
+    }
+
+    const accessToken = this.jwtTokenService.createAccessToken(
+      {
+        sub: refreshPayload.sub,
+        name: refreshPayload.name,
+        email: refreshPayload.email,
+        provider: refreshPayload.provider
+      },
+      refreshPayload.sid
+    );
+
+    return {
+      tokenType: "Bearer",
+      accessToken,
+      refreshToken: nextRefreshToken,
+      expiresIn: this.jwtTokenService.accessTokenTtlSec
+    };
+  }
+
+  logout({ req, refreshToken }) {
+    if (refreshToken) {
+      const refreshPayload = this.jwtTokenService.verifyRefreshToken(refreshToken);
+      if (refreshPayload && refreshPayload.sid) {
+        this.refreshSessionStore.revoke(refreshPayload.sid);
+      }
+    }
+
+    const accessPayload = this.jwtTokenService.getAccessPayloadFromRequest(req);
+    if (accessPayload && accessPayload.sid) {
+      this.refreshSessionStore.revoke(accessPayload.sid);
+    }
+
+    return {
+      ok: true,
+      message: "Logged out"
     };
   }
 
   ensureAuthenticated(req, requireLoginForApi) {
     if (!requireLoginForApi) return null;
 
-    const session = this.sessionTokenService.getSessionFromRequest(req);
-    if (!session) {
+    const accessPayload = this.jwtTokenService.getAccessPayloadFromRequest(req);
+    if (!accessPayload) {
       throw new HttpError(401, "AUTH_REQUIRED", "Login is required to access this API.");
     }
 
-    return session;
+    return accessPayload;
+  }
+
+  #issueTokenPair({ user }) {
+    const sessionId = crypto.randomBytes(18).toString("base64url");
+    const refreshTokenId = this.jwtTokenService.createRefreshTokenId();
+
+    const accessToken = this.jwtTokenService.createAccessToken(user, sessionId);
+    const refreshToken = this.jwtTokenService.createRefreshToken(user, sessionId, refreshTokenId);
+    const refreshPayload = this.jwtTokenService.verifyRefreshToken(refreshToken);
+    if (!refreshPayload) {
+      throw new HttpError(500, "TOKEN_ISSUE_FAILED", "Failed to issue refresh token.");
+    }
+
+    this.refreshSessionStore.createOrReplaceSession({
+      sessionId,
+      tokenId: refreshTokenId,
+      expiresAtSec: refreshPayload.exp
+    });
+
+    return {
+      tokenType: "Bearer",
+      accessToken,
+      refreshToken,
+      expiresIn: this.jwtTokenService.accessTokenTtlSec
+    };
   }
 
   #sanitizeReturnTo(returnTo) {
