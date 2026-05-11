@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "BrawlGG",
+    "slug": "brawlgg-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "brawlgg",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#061224"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.teamselfton.brawlgg"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#061224"
+      },
+      "package": "com.teamselfton.brawlgg",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-secure-store"],
+    "extra": {
+      "apiBaseUrl": "http://127.0.0.1:3000"
+    }
+  }
+}
