@@ -3,7 +3,7 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
     openapi: "3.0.3",
     info: {
       title: "BrawlGG API",
-      version: "2.0.0",
+      version: "2.1.0",
       description: "JWT Access/Refresh 재발급 구조를 사용하는 BrawlGG API 명세입니다."
     },
     servers: [
@@ -16,7 +16,10 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
       { name: "Health", description: "서버 상태 확인" },
       { name: "Auth", description: "Supercell OAuth + JWT 인증" },
       { name: "Player", description: "플레이어 조회" },
+      { name: "Club", description: "클럽 조회" },
       { name: "Rankings", description: "리더보드/랭킹 조회" },
+      { name: "Location", description: "국가/지역 조회" },
+      { name: "Events", description: "이벤트/로테이션 조회" },
       { name: "Meta", description: "브롤러 목록/메타 조회" },
       { name: "Docs", description: "API 문서" }
     ],
@@ -230,6 +233,12 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
       "/api/player/{tag}/battlelog": {
         get: createPlayerOperation("플레이어 배틀로그 조회")
       },
+      "/api/club/{tag}": {
+        get: createClubOperation("클럽 프로필 조회")
+      },
+      "/api/club/{tag}/members": {
+        get: createClubOperation("클럽 멤버 목록 조회")
+      },
       "/api/players/multi": {
         get: {
           tags: ["Player"],
@@ -278,6 +287,108 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
           ]
         }
       },
+      "/api/locations": {
+        get: {
+          tags: ["Location"],
+          summary: "국가/지역 목록 조회",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "limit",
+              in: "query",
+              required: false,
+              schema: { type: "integer", minimum: 5, maximum: 50, example: 50 }
+            }
+          ],
+          responses: {
+            200: {
+              description: "지역 목록",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/GenericItemsResponse" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/locations/{locationId}": {
+        get: {
+          tags: ["Location"],
+          summary: "특정 지역 조회",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "locationId",
+              in: "path",
+              required: true,
+              schema: { type: "string", example: "global" }
+            }
+          ],
+          responses: {
+            200: {
+              description: "지역 정보",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    additionalProperties: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/events": {
+        get: {
+          tags: ["Events"],
+          summary: "이벤트 데이터 조회",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "이벤트 데이터",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    additionalProperties: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/events/rotation": {
+        get: {
+          tags: ["Events"],
+          summary: "이벤트 로테이션 조회",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: {
+              description: "활성/예정 이벤트",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      active: {
+                        type: "array",
+                        items: { type: "object", additionalProperties: true }
+                      },
+                      upcoming: {
+                        type: "array",
+                        items: { type: "object", additionalProperties: true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "/api/brawlers": {
         get: {
           tags: ["Meta"],
@@ -289,6 +400,34 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
               content: {
                 "application/json": {
                   schema: { $ref: "#/components/schemas/GenericItemsResponse" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/brawlers/{brawlerId}": {
+        get: {
+          tags: ["Meta"],
+          summary: "브롤러 상세 조회",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "brawlerId",
+              in: "path",
+              required: true,
+              schema: { type: "integer", example: 16000000 }
+            }
+          ],
+          responses: {
+            200: {
+              description: "브롤러 상세",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    additionalProperties: true
+                  }
                 }
               }
             }
@@ -337,6 +476,35 @@ function createPlayerOperation(summary) {
       },
       401: {
         description: "인증 필요"
+      }
+    }
+  };
+}
+
+function createClubOperation(summary) {
+  return {
+    tags: ["Club"],
+    summary,
+    security: [{ bearerAuth: [] }],
+    parameters: [
+      {
+        name: "tag",
+        in: "path",
+        required: true,
+        schema: { type: "string", example: "YQ0L8C" }
+      }
+    ],
+    responses: {
+      200: {
+        description: "조회 성공",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              additionalProperties: true
+            }
+          }
+        }
       }
     }
   };
