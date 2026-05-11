@@ -26,8 +26,12 @@ apps/
 ## 핵심 기능
 
 - 플레이어 태그 기반 프로필/전투기록/오버뷰 조회
+- 클럽 태그 기반 클럽/멤버 조회
 - 멀티 태그 동시 조회 (Multi-Search)
 - 국가/글로벌 랭킹 조회 (플레이어/클럽/브롤러)
+- 국가/지역 목록 및 지역 상세 조회
+- 이벤트/이벤트 로테이션 조회
+- 브롤러 목록 + 브롤러 상세 조회
 - Supercell OAuth2 (Authorization Code + PKCE)
 - JWT Access/Refresh 토큰 인증 + 재발급
 - API 로그인 필수화 옵션 (`REQUIRE_LOGIN_FOR_API=true`)
@@ -85,11 +89,18 @@ npm run dev
 - `GET /api/player/:tag`
 - `GET /api/player/:tag/overview`
 - `GET /api/player/:tag/battlelog`
+- `GET /api/club/:tag`
+- `GET /api/club/:tag/members`
 - `GET /api/players/multi?tags=2PP,8Q8`
 - `GET /api/rankings/players?country=global&limit=20`
 - `GET /api/rankings/clubs?country=global&limit=20`
 - `GET /api/rankings/brawlers?country=global&brawlerId=16000000&limit=20`
 - `GET /api/brawlers`
+- `GET /api/brawlers/:brawlerId`
+- `GET /api/locations?limit=50`
+- `GET /api/locations/:locationId`
+- `GET /api/events`
+- `GET /api/events/rotation`
 - `GET /api/auth/me`
 - `POST /api/auth/refresh`
 - `GET /api/auth/supercell/start?return_to=/`
@@ -114,9 +125,16 @@ npm run dev
 curl http://127.0.0.1:3000/api/player/2PP
 curl http://127.0.0.1:3000/api/player/2PP/overview
 curl http://127.0.0.1:3000/api/player/2PP/battlelog
+curl http://127.0.0.1:3000/api/club/YQ0L8C
+curl http://127.0.0.1:3000/api/club/YQ0L8C/members
 curl "http://127.0.0.1:3000/api/rankings/players?country=kr&limit=20"
 curl "http://127.0.0.1:3000/api/rankings/clubs?country=global&limit=20"
 curl "http://127.0.0.1:3000/api/rankings/brawlers?country=global&brawlerId=16000000&limit=20"
+curl "http://127.0.0.1:3000/api/locations?limit=50"
+curl "http://127.0.0.1:3000/api/locations/global"
+curl "http://127.0.0.1:3000/api/events"
+curl "http://127.0.0.1:3000/api/events/rotation"
+curl "http://127.0.0.1:3000/api/brawlers/16000000"
 curl "http://127.0.0.1:3000/api/players/multi?tags=2PP,8Q8,YQ9U"
 ```
 
