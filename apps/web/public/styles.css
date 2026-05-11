@@ -179,6 +179,22 @@ button:disabled {
   margin-top: 1rem;
 }
 
+.meta-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.7rem;
+  background: rgba(7, 16, 29, 0.58);
+}
+
+.meta-card p {
+  margin: 0.22rem 0;
+  color: var(--text-muted);
+}
+
+.meta-card p strong {
+  color: var(--text-main);
+}
+
 .player-summary {
   display: grid;
   gap: 0.5rem;

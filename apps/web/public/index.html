@@ -70,8 +70,41 @@
               <option value="16000000">Shelly</option>
             </select>
             <button id="load-ranking" type="button">랭킹 불러오기</button>
+            <button id="brawler-detail-button" class="ghost" type="button">브롤러 상세</button>
+            <button id="location-info-button" class="ghost" type="button">지역 상세</button>
+            <button id="reload-locations-button" class="ghost" type="button">국가 동기화</button>
           </div>
           <ol id="ranking-list" class="ranking-list"></ol>
+          <div id="brawler-detail-panel" class="panel"></div>
+          <div id="location-info-panel" class="panel"></div>
+        </section>
+
+        <section class="card">
+          <h2>클럽 검색</h2>
+          <form id="club-form" class="search-form">
+            <label for="club-tag-input">클럽 태그</label>
+            <div class="row">
+              <input
+                id="club-tag-input"
+                name="clubTag"
+                type="text"
+                placeholder="#YQ0L8C 또는 YQ0L8C"
+                required
+              />
+              <button id="club-search-button" type="submit">클럽 조회</button>
+            </div>
+          </form>
+          <p id="club-status" class="status">클럽 태그를 입력하면 정보와 멤버를 조회합니다.</p>
+          <div id="club-panel" class="panel"></div>
+        </section>
+
+        <section class="card">
+          <h2>이벤트 로테이션</h2>
+          <div class="row">
+            <button id="events-load-button" type="button">이벤트 로딩</button>
+          </div>
+          <p id="events-status" class="status">활성/예정 이벤트를 확인하세요.</p>
+          <ol id="events-list" class="ranking-list"></ol>
         </section>
 
         <section class="card card-wide">

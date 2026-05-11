@@ -1,14 +1,24 @@
 import {
   applyAuthButtons,
   applyInteractionLock,
+  clearBrawlerDetail,
+  clearClubPanel,
+  clearLocationInfo,
   clearPlayerPanel,
+  renderBrawlerDetail,
   renderBrawlerOptions,
+  renderClub,
+  renderCountryOptions,
+  renderEvents,
+  renderLocationInfo,
   renderMultiResults,
   renderPlayer,
   renderRankingMessage,
   renderRankings,
   setAuthStatus,
   setBrawlerFilterVisibility,
+  setClubStatus,
+  setEventsStatus,
   setMultiStatus,
   setStatus
 } from "./presentation/renderers.js";
@@ -20,7 +30,14 @@ import {
   startOAuthLogin
 } from "./application/authApplication.js";
 import {
+  loadBrawlerById,
   loadBrawlers,
+  loadClub,
+  loadClubMembers,
+  loadEventRotation,
+  loadEvents,
+  loadLocation,
+  loadLocations,
   loadMultiPlayerOverview,
   loadPlayerOverview,
   loadRankings
@@ -35,7 +52,9 @@ const state = {
   authenticated: false,
   user: null,
   brawlers: [],
-  brawlersLoaded: false
+  brawlersLoaded: false,
+  locations: [],
+  locationsLoaded: false
 };
 
 function syncAuthButtons() {
@@ -63,9 +82,13 @@ function syncInteractionLock() {
   if (lockedByToken) {
     setStatus(elements, "서버에 BRAWL_API_TOKEN을 설정하면 조회를 시작할 수 있습니다.", true);
     setMultiStatus(elements, "서버에 BRAWL_API_TOKEN이 필요합니다.", true);
+    setClubStatus(elements, "서버에 BRAWL_API_TOKEN이 필요합니다.", true);
+    setEventsStatus(elements, "서버에 BRAWL_API_TOKEN이 필요합니다.", true);
   } else if (lockedByAuth) {
     setStatus(elements, "로그인 후 전적/랭킹 조회가 가능합니다.");
     setMultiStatus(elements, "로그인 후 멀티검색을 사용할 수 있습니다.");
+    setClubStatus(elements, "로그인 후 클럽 조회가 가능합니다.");
+    setEventsStatus(elements, "로그인 후 이벤트 조회가 가능합니다.");
   }
 }
 
@@ -102,8 +125,8 @@ async function refreshHealthAndAuth() {
   syncInteractionLock();
 }
 
-async function loadBrawlerCatalogIfAvailable() {
-  if (state.brawlersLoaded) return;
+async function loadBrawlerCatalogIfAvailable(force = false) {
+  if (!force && state.brawlersLoaded) return;
 
   const { locked } = isApiAccessLocked();
   if (locked) return;
@@ -119,6 +142,22 @@ async function loadBrawlerCatalogIfAvailable() {
   } catch {
     state.brawlers = [];
     state.brawlersLoaded = false;
+  }
+}
+
+async function loadLocationCatalogIfAvailable(force = false) {
+  if (!force && state.locationsLoaded) return;
+  if (isApiAccessLocked().locked) return;
+
+  try {
+    const currentCountry = elements.countrySelect.value;
+    const response = await loadLocations(50);
+    state.locations = Array.isArray(response.items) ? response.items : [];
+    state.locationsLoaded = true;
+    renderCountryOptions(elements, state.locations, currentCountry || "global");
+  } catch {
+    state.locations = [];
+    state.locationsLoaded = false;
   }
 }
 
@@ -145,6 +184,34 @@ async function onSubmitPlayerSearch(event) {
     setStatus(elements, "조회 완료");
   } catch (error) {
     setStatus(elements, error.message || "플레이어 조회 실패", true);
+  }
+}
+
+async function onSubmitClubSearch(event) {
+  event.preventDefault();
+
+  const { lockedByAuth, lockedByToken } = isApiAccessLocked();
+  if (lockedByToken) {
+    setClubStatus(elements, "서버에 BRAWL_API_TOKEN이 없어 조회할 수 없습니다.", true);
+    return;
+  }
+  if (lockedByAuth) {
+    setClubStatus(elements, "로그인 후 클럽 조회가 가능합니다.", true);
+    return;
+  }
+
+  setClubStatus(elements, "클럽 데이터 로딩 중...");
+  clearClubPanel(elements);
+
+  try {
+    const [club, members] = await Promise.all([
+      loadClub(elements.clubInput.value),
+      loadClubMembers(elements.clubInput.value)
+    ]);
+    renderClub(elements, club, members);
+    setClubStatus(elements, "클럽 조회 완료");
+  } catch (error) {
+    setClubStatus(elements, error.message || "클럽 조회 실패", true);
   }
 }
 
@@ -186,6 +253,74 @@ async function onLoadRankings() {
   }
 }
 
+async function onLoadLocationInfo() {
+  if (isApiAccessLocked().locked) return;
+  clearLocationInfo(elements);
+
+  try {
+    const selectedCountry = String(elements.countrySelect.value || "global").toLowerCase();
+    const locationId =
+      selectedCountry === "global"
+        ? "global"
+        : resolveLocationIdByCountryCode(selectedCountry) || selectedCountry;
+    const location = await loadLocation(locationId);
+    renderLocationInfo(elements, location);
+  } catch (error) {
+    elements.locationInfoPanel.innerHTML = `<p>${safeText(error.message || "지역 조회 실패")}</p>`;
+  }
+}
+
+async function onLoadBrawlerDetail() {
+  if (isApiAccessLocked().locked) return;
+  clearBrawlerDetail(elements);
+
+  const brawlerId = elements.brawlerSelect.value;
+  if (!brawlerId) return;
+
+  try {
+    const brawler = await loadBrawlerById(brawlerId);
+    renderBrawlerDetail(elements, brawler);
+  } catch (error) {
+    elements.brawlerDetailPanel.innerHTML = `<p>${safeText(error.message || "브롤러 조회 실패")}</p>`;
+  }
+}
+
+async function onLoadEvents() {
+  const { lockedByAuth, lockedByToken } = isApiAccessLocked();
+  if (lockedByToken) {
+    setEventsStatus(elements, "서버에 BRAWL_API_TOKEN이 없어 조회할 수 없습니다.", true);
+    return;
+  }
+  if (lockedByAuth) {
+    setEventsStatus(elements, "로그인 후 이벤트 조회가 가능합니다.", true);
+    return;
+  }
+
+  elements.eventsButton.disabled = true;
+  elements.eventsButton.textContent = "불러오는 중...";
+  elements.eventsList.innerHTML = "";
+  setEventsStatus(elements, "이벤트 로테이션 로딩 중...");
+
+  try {
+    const [rotation, events] = await Promise.all([loadEventRotation(), loadEvents()]);
+    const mergedPayload = {
+      active: Array.isArray(rotation.active) ? rotation.active : [],
+      upcoming: Array.isArray(rotation.upcoming) ? rotation.upcoming : [],
+      items: Array.isArray(events.items) ? events.items : []
+    };
+    renderEvents(elements, mergedPayload);
+    setEventsStatus(
+      elements,
+      `이벤트 조회 완료 (active ${mergedPayload.active.length}, upcoming ${mergedPayload.upcoming.length})`
+    );
+  } catch (error) {
+    setEventsStatus(elements, error.message || "이벤트 조회 실패", true);
+  } finally {
+    elements.eventsButton.disabled = isApiAccessLocked().locked;
+    elements.eventsButton.textContent = "이벤트 로딩";
+  }
+}
+
 async function onSubmitMultiSearch(event) {
   event.preventDefault();
 
@@ -223,15 +358,35 @@ function onRankingTypeChange() {
   syncBrawlerFilterVisibility();
 }
 
+async function onReloadLocations() {
+  if (isApiAccessLocked().locked) return;
+
+  elements.reloadLocationsButton.disabled = true;
+  elements.reloadLocationsButton.textContent = "동기화 중...";
+
+  try {
+    await loadLocationCatalogIfAvailable(true);
+  } finally {
+    elements.reloadLocationsButton.disabled = isApiAccessLocked().locked;
+    elements.reloadLocationsButton.textContent = "국가 동기화";
+  }
+}
+
 async function onLogout() {
   try {
     await logout();
     state.authenticated = false;
     state.user = null;
     clearPlayerPanel(elements);
+    clearClubPanel(elements);
+    clearBrawlerDetail(elements);
+    clearLocationInfo(elements);
+    elements.eventsList.innerHTML = "";
     elements.rankingList.innerHTML = "";
     elements.multiList.innerHTML = "";
     setStatus(elements, "로그아웃되었습니다.");
+    setClubStatus(elements, "로그아웃되었습니다.");
+    setEventsStatus(elements, "로그아웃되었습니다.");
     setMultiStatus(elements, "로그아웃되었습니다.");
   } catch {
     setStatus(elements, "로그아웃 실패", true);
@@ -241,10 +396,23 @@ async function onLogout() {
   await onLoadRankings();
 }
 
+function resolveLocationIdByCountryCode(countryCode) {
+  const normalized = String(countryCode || "").toLowerCase();
+  const found = state.locations.find(
+    (location) => String(location.countryCode || "").toLowerCase() === normalized
+  );
+  return found?.id;
+}
+
 function bindEvents() {
   elements.form.addEventListener("submit", onSubmitPlayerSearch);
+  elements.clubForm.addEventListener("submit", onSubmitClubSearch);
   elements.multiForm.addEventListener("submit", onSubmitMultiSearch);
   elements.rankingButton.addEventListener("click", onLoadRankings);
+  elements.locationInfoButton.addEventListener("click", onLoadLocationInfo);
+  elements.reloadLocationsButton.addEventListener("click", onReloadLocations);
+  elements.brawlerDetailButton.addEventListener("click", onLoadBrawlerDetail);
+  elements.eventsButton.addEventListener("click", onLoadEvents);
   elements.rankingTypeSelect.addEventListener("change", onRankingTypeChange);
   elements.loginButton.addEventListener("click", startOAuthLogin);
   elements.logoutButton.addEventListener("click", onLogout);
@@ -254,11 +422,18 @@ async function bootstrap() {
   bindEvents();
   syncBrawlerFilterVisibility();
   await refreshHealthAndAuth();
-  await loadBrawlerCatalogIfAvailable();
+  await Promise.all([loadBrawlerCatalogIfAvailable(), loadLocationCatalogIfAvailable()]);
 
   if (!isApiAccessLocked().locked) {
-    await onLoadRankings();
+    await Promise.all([onLoadRankings(), onLoadEvents()]);
   }
+}
+
+function safeText(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 bootstrap();
