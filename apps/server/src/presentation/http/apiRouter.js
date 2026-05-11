@@ -46,14 +46,28 @@ function createApiRouter({ useCases, openApiSpec }) {
         return await handlePlayerRoute(reqUrl, res, useCases);
       }
 
+      if (pathname.startsWith("/api/club/")) {
+        return await handleClubRoute(reqUrl, res, useCases);
+      }
+
       if (pathname.startsWith("/api/rankings/")) {
         const rankings = await handleRankingRoute(reqUrl, useCases);
         return sendJson(res, 200, rankings);
       }
 
-      if (pathname === "/api/brawlers") {
-        const brawlers = await useCases.getBrawlers();
-        return sendJson(res, 200, brawlers);
+      if (pathname === "/api/locations" || pathname.startsWith("/api/locations/")) {
+        const locations = await handleLocationRoute(reqUrl, useCases);
+        return sendJson(res, 200, locations);
+      }
+
+      if (pathname === "/api/events" || pathname === "/api/events/rotation") {
+        const events = await handleEventRoute(reqUrl, useCases);
+        return sendJson(res, 200, events);
+      }
+
+      if (pathname.startsWith("/api/brawlers")) {
+        const brawlerPayload = await handleBrawlerRoute(reqUrl, useCases);
+        return sendJson(res, 200, brawlerPayload);
       }
 
       return sendJson(res, 404, { message: "API route not found." });
@@ -136,6 +150,24 @@ async function handlePlayerRoute(reqUrl, res, useCases) {
   return sendJson(res, 200, playerProfile);
 }
 
+async function handleClubRoute(reqUrl, res, useCases) {
+  const parts = reqUrl.pathname.split("/").filter(Boolean);
+  const rawTag = parts[2];
+  const section = parts[3];
+
+  if (section === "members") {
+    const members = await useCases.getClubMembers(rawTag);
+    return sendJson(res, 200, members);
+  }
+
+  if (section) {
+    return sendJson(res, 404, { message: "API route not found." });
+  }
+
+  const club = await useCases.getClub(rawTag);
+  return sendJson(res, 200, club);
+}
+
 async function handleRankingRoute(reqUrl, useCases) {
   const pathname = reqUrl.pathname;
   const country = reqUrl.searchParams.get("country");
@@ -156,12 +188,56 @@ async function handleRankingRoute(reqUrl, useCases) {
   throw new HttpError(404, "NOT_FOUND", "Ranking route not found.");
 }
 
+async function handleLocationRoute(reqUrl, useCases) {
+  if (reqUrl.pathname === "/api/locations") {
+    return useCases.getLocations(reqUrl.searchParams.get("limit"));
+  }
+
+  const parts = reqUrl.pathname.split("/").filter(Boolean);
+  const locationId = parts[2];
+
+  if (!locationId || parts.length > 3) {
+    throw new HttpError(404, "NOT_FOUND", "Location route not found.");
+  }
+
+  return useCases.getLocation(locationId);
+}
+
+async function handleEventRoute(reqUrl, useCases) {
+  if (reqUrl.pathname === "/api/events/rotation") {
+    return useCases.getEventRotation();
+  }
+
+  if (reqUrl.pathname === "/api/events") {
+    return useCases.getEvents();
+  }
+
+  throw new HttpError(404, "NOT_FOUND", "Event route not found.");
+}
+
+async function handleBrawlerRoute(reqUrl, useCases) {
+  const parts = reqUrl.pathname.split("/").filter(Boolean);
+
+  if (parts.length === 2) {
+    return useCases.getBrawlers();
+  }
+
+  if (parts.length === 3) {
+    return useCases.getBrawlerById(parts[2]);
+  }
+
+  throw new HttpError(404, "NOT_FOUND", "Brawler route not found.");
+}
+
 function requiresAuth(pathname) {
   return (
     pathname.startsWith("/api/player") ||
     pathname.startsWith("/api/players") ||
+    pathname.startsWith("/api/club") ||
     pathname.startsWith("/api/rankings") ||
-    pathname.startsWith("/api/brawlers")
+    pathname.startsWith("/api/brawlers") ||
+    pathname.startsWith("/api/locations") ||
+    pathname.startsWith("/api/events")
   );
 }
 
