@@ -15,6 +15,13 @@ const { createGetPlayerRankingsUseCase } = require("./application/usecases/game/
 const { createGetClubRankingsUseCase } = require("./application/usecases/game/getClubRankings");
 const { createGetBrawlerRankingsUseCase } = require("./application/usecases/game/getBrawlerRankings");
 const { createGetBrawlersUseCase } = require("./application/usecases/game/getBrawlers");
+const { createGetClubUseCase } = require("./application/usecases/game/getClub");
+const { createGetClubMembersUseCase } = require("./application/usecases/game/getClubMembers");
+const { createGetLocationsUseCase } = require("./application/usecases/game/getLocations");
+const { createGetLocationUseCase } = require("./application/usecases/game/getLocation");
+const { createGetEventsUseCase } = require("./application/usecases/game/getEvents");
+const { createGetEventRotationUseCase } = require("./application/usecases/game/getEventRotation");
+const { createGetBrawlerByIdUseCase } = require("./application/usecases/game/getBrawlerById");
 const { createGetAuthStatusUseCase } = require("./application/usecases/auth/getAuthStatus");
 const { createStartOAuthLoginUseCase } = require("./application/usecases/auth/startOAuthLogin");
 const { createCompleteOAuthLoginUseCase } = require("./application/usecases/auth/completeOAuthLogin");
@@ -57,10 +64,17 @@ function createApp() {
     getPlayerBattlelog: createGetPlayerBattlelogUseCase({ gameDataService }),
     getPlayerOverview: createGetPlayerOverviewUseCase({ gameDataService }),
     getMultiPlayerOverview: createGetMultiPlayerOverviewUseCase({ gameDataService }),
+    getClub: createGetClubUseCase({ gameDataService }),
+    getClubMembers: createGetClubMembersUseCase({ gameDataService }),
     getPlayerRankings: createGetPlayerRankingsUseCase({ gameDataService }),
     getClubRankings: createGetClubRankingsUseCase({ gameDataService }),
     getBrawlerRankings: createGetBrawlerRankingsUseCase({ gameDataService }),
     getBrawlers: createGetBrawlersUseCase({ gameDataService }),
+    getBrawlerById: createGetBrawlerByIdUseCase({ gameDataService }),
+    getLocations: createGetLocationsUseCase({ gameDataService }),
+    getLocation: createGetLocationUseCase({ gameDataService }),
+    getEvents: createGetEventsUseCase({ gameDataService }),
+    getEventRotation: createGetEventRotationUseCase({ gameDataService }),
     getAuthStatus: createGetAuthStatusUseCase({ authService }),
     startOAuthLogin: createStartOAuthLoginUseCase({ authService }),
     completeOAuthLogin: createCompleteOAuthLoginUseCase({ authService }),

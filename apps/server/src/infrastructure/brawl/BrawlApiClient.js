@@ -14,6 +14,14 @@ class BrawlApiClient {
     return this.#request(`/players/%23${playerTag}/battlelog`);
   }
 
+  async getClub(clubTag) {
+    return this.#request(`/clubs/%23${clubTag}`);
+  }
+
+  async getClubMembers(clubTag) {
+    return this.#request(`/clubs/%23${clubTag}/members`);
+  }
+
   async getPlayerRankings({ country, limit }) {
     return this.#requestWithFallback([
       `/rankings/${country}/players?limit=${limit}`,
@@ -37,6 +45,30 @@ class BrawlApiClient {
 
   async getBrawlers() {
     return this.#request("/brawlers");
+  }
+
+  async getBrawlerById(brawlerId) {
+    return this.#request(`/brawlers/${brawlerId}`);
+  }
+
+  async getLocations({ limit }) {
+    const parsedLimit = Number(limit);
+    const limitQuery =
+      Number.isFinite(parsedLimit) && parsedLimit > 0 ? `?limit=${Math.floor(parsedLimit)}` : "";
+
+    return this.#request(`/locations${limitQuery}`);
+  }
+
+  async getLocation(locationId) {
+    return this.#request(`/locations/${locationId}`);
+  }
+
+  async getEvents() {
+    return this.#requestWithFallback(["/events", "/events/rotation"]);
+  }
+
+  async getEventRotation() {
+    return this.#requestWithFallback(["/events/rotation", "/events"]);
   }
 
   async #request(endpoint) {

@@ -23,6 +23,22 @@ class GameDataService {
     return { items };
   }
 
+  async getClub(rawTag) {
+    const tag = this.#resolveTag(rawTag);
+    return this.brawlApiClient.getClub(tag);
+  }
+
+  async getClubMembers(rawTag) {
+    const tag = this.#resolveTag(rawTag);
+    const payload = await this.brawlApiClient.getClubMembers(tag);
+    const items = Array.isArray(payload.items) ? payload.items : [];
+
+    return {
+      tag: `#${tag}`,
+      items
+    };
+  }
+
   async getPlayerOverview(rawTag) {
     const tag = this.#resolveTag(rawTag);
     const [player, battlelogPayload] = await Promise.all([
@@ -104,6 +120,52 @@ class GameDataService {
     };
   }
 
+  async getBrawlerById(rawBrawlerId) {
+    const brawlerId = parsePositiveInteger(
+      rawBrawlerId,
+      "INVALID_BRAWLER_ID",
+      "A valid brawlerId path parameter is required."
+    );
+
+    return this.brawlApiClient.getBrawlerById(brawlerId);
+  }
+
+  async getLocations(rawLimit) {
+    const limit = parseLimit(rawLimit, 50);
+    const payload = await this.brawlApiClient.getLocations({ limit });
+    const items = Array.isArray(payload.items) ? payload.items : [];
+
+    return {
+      items: items
+        .map((location) => ({
+          id: location.id,
+          name: location.name,
+          isCountry: Boolean(location.isCountry),
+          countryCode: location.countryCode || ""
+        }))
+        .sort((left, right) => String(left.name).localeCompare(String(right.name)))
+    };
+  }
+
+  async getLocation(rawLocationId) {
+    const locationId = resolveLocationId(rawLocationId);
+    return this.brawlApiClient.getLocation(locationId);
+  }
+
+  async getEvents() {
+    const payload = await this.brawlApiClient.getEvents();
+    return normalizeEventPayload(payload);
+  }
+
+  async getEventRotation() {
+    const payload = await this.brawlApiClient.getEventRotation();
+    const normalized = normalizeEventPayload(payload);
+    return {
+      active: normalized.active,
+      upcoming: normalized.upcoming
+    };
+  }
+
   #resolveTag(rawTag) {
     const tag = normalizeTag(rawTag);
     if (!tag) {
@@ -157,6 +219,55 @@ function parseLimit(rawLimit, fallback = 20) {
   const parsed = Number(rawLimit);
   const base = Number.isFinite(parsed) ? parsed : fallback;
   return Math.max(5, Math.min(50, base));
+}
+
+function parsePositiveInteger(rawValue, reason, message) {
+  const parsed = Number(rawValue);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new HttpError(400, reason, message);
+  }
+
+  return parsed;
+}
+
+function resolveLocationId(rawLocationId) {
+  const normalized = String(rawLocationId || "")
+    .trim()
+    .toLowerCase();
+  if (!normalized) {
+    throw new HttpError(
+      400,
+      "INVALID_LOCATION_ID",
+      "A valid location id (number or global) is required."
+    );
+  }
+
+  if (normalized === "global") {
+    return "global";
+  }
+
+  const numericId = Number(normalized);
+  if (!Number.isInteger(numericId) || numericId < 0) {
+    throw new HttpError(
+      400,
+      "INVALID_LOCATION_ID",
+      "A valid location id (number or global) is required."
+    );
+  }
+
+  return numericId;
+}
+
+function normalizeEventPayload(payload) {
+  const active = Array.isArray(payload.active) ? payload.active : [];
+  const upcoming = Array.isArray(payload.upcoming) ? payload.upcoming : [];
+  const items = Array.isArray(payload.items) ? payload.items : [...active, ...upcoming];
+
+  return {
+    active,
+    upcoming,
+    items
+  };
 }
 
 function summarizeTopBrawlers(brawlers) {
