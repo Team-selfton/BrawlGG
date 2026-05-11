@@ -2,11 +2,20 @@ const crypto = require("node:crypto");
 const { HttpError } = require("../../domain/errors/HttpError");
 
 class AuthService {
-  constructor({ oauthClient, oauthStateStore, jwtTokenService, refreshSessionStore }) {
+  constructor({
+    oauthClient,
+    oauthStateStore,
+    jwtTokenService,
+    refreshSessionStore,
+    mobileAppScheme = "brawlgg"
+  }) {
     this.oauthClient = oauthClient;
     this.oauthStateStore = oauthStateStore;
     this.jwtTokenService = jwtTokenService;
     this.refreshSessionStore = refreshSessionStore;
+    this.mobileAppScheme = String(mobileAppScheme || "brawlgg")
+      .trim()
+      .toLowerCase();
   }
 
   getAuthStatus(req) {
@@ -188,9 +197,15 @@ class AuthService {
 
   #sanitizeReturnTo(returnTo) {
     if (!returnTo || typeof returnTo !== "string") return "/";
-    if (!returnTo.startsWith("/")) return "/";
-    if (returnTo.startsWith("//")) return "/";
-    return returnTo;
+
+    const trimmed = returnTo.trim();
+    if (trimmed.toLowerCase().startsWith(`${this.mobileAppScheme}://`)) {
+      return trimmed;
+    }
+
+    if (!trimmed.startsWith("/")) return "/";
+    if (trimmed.startsWith("//")) return "/";
+    return trimmed;
   }
 }
 

@@ -3,7 +3,7 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
     openapi: "3.0.3",
     info: {
       title: "BrawlGG API",
-      version: "2.1.0",
+      version: "2.2.0",
       description: "JWT Access/Refresh 재발급 구조를 사용하는 BrawlGG API 명세입니다."
     },
     servers: [
@@ -196,7 +196,9 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
               name: "return_to",
               in: "query",
               required: false,
-              schema: { type: "string", example: "/" }
+              schema: { type: "string", example: "/" },
+              description:
+                "웹은 '/' 경로를 사용하고, 모바일 앱은 예: brawlgg://auth-callback 같은 커스텀 스킴을 전달할 수 있습니다."
             }
           ],
           responses: {
@@ -207,7 +209,8 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
       "/api/auth/supercell/callback": {
         get: {
           tags: ["Auth"],
-          summary: "Supercell OAuth 콜백 (브라우저 localStorage에 JWT 저장 후 리다이렉트)",
+          summary:
+            "Supercell OAuth 콜백 (웹은 localStorage 저장, 모바일 딥링크는 토큰 쿼리 전달 후 리다이렉트)",
           parameters: [
             { name: "code", in: "query", required: false, schema: { type: "string" } },
             { name: "state", in: "query", required: false, schema: { type: "string" } },

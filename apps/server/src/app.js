@@ -47,7 +47,8 @@ function createApp() {
     oauthClient,
     oauthStateStore,
     jwtTokenService,
-    refreshSessionStore
+    refreshSessionStore,
+    mobileAppScheme: config.auth.mobile.appScheme
   });
   const openApiSpec = createOpenApiSpec({
     appBaseUrl: config.server.appBaseUrl,

@@ -50,6 +50,11 @@ function loadConfig(env = process.env) {
     },
     auth: {
       requireLoginForApi: toBoolean(env.REQUIRE_LOGIN_FOR_API || "false", false),
+      mobile: {
+        appScheme: String(env.MOBILE_APP_SCHEME || "brawlgg")
+          .trim()
+          .toLowerCase()
+      },
       jwt: {
         secret: jwtSecret,
         issuer: env.JWT_ISSUER || "brawlgg",

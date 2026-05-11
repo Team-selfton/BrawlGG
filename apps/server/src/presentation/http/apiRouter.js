@@ -291,7 +291,9 @@ function buildOAuthCallbackPage(callbackResult) {
 
   const serializedPayload = JSON.stringify(tokenPayload);
   const safePayloadLiteral = JSON.stringify(serializedPayload);
-  const safeReturnTo = JSON.stringify(callbackResult.returnTo || "/");
+  const returnTarget = buildOAuthReturnTarget(callbackResult.returnTo, tokenPayload);
+  const safeReturnTarget = JSON.stringify(returnTarget);
+  const shouldPersistToWebStorage = JSON.stringify(!isCustomSchemeUrl(callbackResult.returnTo || ""));
 
   return `<!doctype html>
 <html lang="ko">
@@ -306,12 +308,49 @@ function buildOAuthCallbackPage(callbackResult) {
       (function () {
         var storageKey = "brawlgg_auth_tokens";
         var payload = JSON.parse(${safePayloadLiteral});
-        localStorage.setItem(storageKey, JSON.stringify(payload));
-        window.location.replace(${safeReturnTo});
+        if (${shouldPersistToWebStorage}) {
+          localStorage.setItem(storageKey, JSON.stringify(payload));
+        }
+        window.location.replace(${safeReturnTarget});
       })();
     </script>
   </body>
 </html>`;
+}
+
+function buildOAuthReturnTarget(returnTo, tokenPayload) {
+  const target = typeof returnTo === "string" && returnTo ? returnTo : "/";
+  if (!isCustomSchemeUrl(target)) {
+    return target;
+  }
+
+  try {
+    const url = new URL(target);
+    url.searchParams.set("tokenType", String(tokenPayload.tokenType || "Bearer"));
+    url.searchParams.set("accessToken", String(tokenPayload.accessToken || ""));
+    url.searchParams.set("refreshToken", String(tokenPayload.refreshToken || ""));
+    url.searchParams.set("expiresIn", String(tokenPayload.expiresIn || 0));
+    return url.toString();
+  } catch {
+    const delimiter = target.includes("?") ? "&" : "?";
+    const params = new URLSearchParams({
+      tokenType: String(tokenPayload.tokenType || "Bearer"),
+      accessToken: String(tokenPayload.accessToken || ""),
+      refreshToken: String(tokenPayload.refreshToken || ""),
+      expiresIn: String(tokenPayload.expiresIn || 0)
+    });
+    return `${target}${delimiter}${params.toString()}`;
+  }
+}
+
+function isCustomSchemeUrl(value) {
+  if (!value || typeof value !== "string") return false;
+  const trimmed = value.trim();
+  const lower = trimmed.toLowerCase();
+  const hasScheme = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmed);
+  if (!hasScheme) return false;
+
+  return !lower.startsWith("http://") && !lower.startsWith("https://");
 }
 
 function handleError(res, error) {
