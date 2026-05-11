@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node apps/server/src/index.js",
     "dev": "node apps/server/src/index.js",
-    "start:legacy": "node server.js"
+    "start:legacy": "node server.js",
+    "mobile:start": "cd apps/mobile && npm run start",
+    "mobile:ios": "cd apps/mobile && npm run ios",
+    "mobile:android": "cd apps/mobile && npm run android"
   },
   "engines": {
     "node": ">=18"
