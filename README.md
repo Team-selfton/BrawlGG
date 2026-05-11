@@ -21,6 +21,12 @@ apps/
       application/      # 화면에서 쓰는 API 유스케이스
       presentation/     # DOM 선택/렌더링
       shared/           # 공통 HTTP 클라이언트
+  mobile/
+    src/
+      domain/           # 모바일 도메인 포맷터
+      application/      # 모바일 API 유스케이스
+      presentation/     # RN 화면/컴포넌트
+      shared/           # 런타임 설정/토큰 저장/HTTP 클라이언트
 ```
 
 ## 핵심 기능
@@ -35,6 +41,8 @@ apps/
 - Supercell OAuth2 (Authorization Code + PKCE)
 - JWT Access/Refresh 토큰 인증 + 재발급
 - API 로그인 필수화 옵션 (`REQUIRE_LOGIN_FOR_API=true`)
+- Expo 기반 React Native 모바일 앱 (`apps/mobile`)
+- 모바일 OAuth 딥링크 콜백 (`brawlgg://auth-callback`)
 
 ## 실행
 
@@ -56,6 +64,20 @@ npm run dev
 3. 접속
 
 - [http://localhost:3000](http://localhost:3000)
+
+## 모바일 앱 실행 (Expo)
+
+```bash
+cd apps/mobile
+npm install
+npm run start
+```
+
+- iOS 시뮬레이터: `npm run ios`
+- Android 에뮬레이터: `npm run android`
+
+모바일 앱에서 API 주소는 앱 내 설정 카드에서 변경할 수 있습니다.
+실기기 테스트 시 `http://127.0.0.1:3000` 대신 개발 PC의 LAN IP를 사용하세요.
 
 ## 전적/통계/랭킹/배틀로그 조회 세팅
 
@@ -81,6 +103,7 @@ npm run dev
 - `JWT_ACCESS_TTL_SEC`
 - `JWT_REFRESH_TTL_SEC`
 - `OAUTH_STATE_TTL_MS`
+- `MOBILE_APP_SCHEME` (기본: `brawlgg`)
 
 ## API 엔드포인트
 
@@ -111,6 +134,22 @@ npm run dev
 
 - Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)
 - OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
+
+## 모바일 출시 (EAS Build)
+
+`apps/mobile`에서:
+
+```bash
+npx eas login
+npx eas build -p ios --profile production
+npx eas build -p android --profile production
+```
+
+출시 전 체크:
+
+- App Store / Play Console 번들 식별자 확인 (`apps/mobile/app.json`)
+- 서버 배포 주소를 모바일 앱 설정 또는 `app.json > extra.apiBaseUrl`로 지정
+- Supercell OAuth 콘솔에 모바일 스킴 콜백 등록: `brawlgg://auth-callback`
 
 ## 인증 구조 (JWT)
 
