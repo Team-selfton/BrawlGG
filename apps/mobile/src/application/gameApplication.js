@@ -27,6 +27,10 @@ export async function loadClubMembers(rawClubTag) {
   return fetchJson(`/api/club/${encodeURIComponent(tag)}/members`);
 }
 
+export async function loadMultiPlayerOverview(rawTags) {
+  return fetchJson(`/api/players/multi?tags=${encodeURIComponent(String(rawTags || ""))}`);
+}
+
 export async function loadEventRotation() {
   return fetchJson("/api/events/rotation");
 }

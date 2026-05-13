@@ -63,18 +63,20 @@ export function renderPlayer(elements, overview) {
   const player = overview.player || {};
   const battlelog = overview.battlelog || { items: [] };
   const insights = overview.insights || {};
-  const topBrawlers = overview.topBrawlers || [];
+  const topBrawlers = Array.isArray(overview.topBrawlers) ? overview.topBrawlers : [];
 
   const battleItems = (battlelog.items || [])
-    .slice(0, 8)
+    .slice(0, 10)
     .map(toBattleViewModel)
     .map(
       (battle) => `
-      <div class="battle-item">
-        <strong>${safeText(battle.mode)}</strong> • 결과: ${safeText(battle.result)}
-        <p>${safeText(battle.map)}</p>
-        <p>${safeText(battle.time)}</p>
-      </div>
+      <li>
+        <div>
+          <p class="match-main">${safeText(battle.mode)} · ${safeText(battle.result)}</p>
+          <p class="match-sub">${safeText(battle.map)}</p>
+        </div>
+        <span class="match-sub">${safeText(battle.time)}</span>
+      </li>
     `
     )
     .join("");
@@ -82,10 +84,10 @@ export function renderPlayer(elements, overview) {
   const brawlerItems = topBrawlers
     .slice(0, 8)
     .map(
-      (brawler) => `
+      (brawler, index) => `
       <li>
-        <span class="name">${safeText(brawler.name || "-")}</span>
-        <span>${safeText(String(brawler.trophies ?? "-"))} trophies / P${safeText(
+        <span>${index + 1}. <strong>${safeText(brawler.name || "-")}</strong></span>
+        <span class="match-sub">${safeText(String(brawler.trophies ?? "-"))}T · P${safeText(
           String(brawler.power ?? "-")
         )}</span>
       </li>
@@ -94,34 +96,46 @@ export function renderPlayer(elements, overview) {
     .join("");
 
   elements.playerPanel.innerHTML = `
-    <article class="player-summary">
-      <div class="summary-head">
-        <h3>${safeText(player.name || "Unknown Player")}</h3>
-        <span class="tag">${safeText(player.tag || "-")}</span>
+    <article class="profile-snapshot">
+      <div class="profile-head">
+        <div>
+          <h3>${safeText(player.name || "Unknown Player")}</h3>
+          <span class="tag">${safeText(player.tag || "-")}</span>
+        </div>
+        <span class="tier-chip">TROPHIES ${safeText(String(player.trophies ?? "-"))}</span>
       </div>
+
       <div class="stats-grid">
-        ${renderStat("트로피", player.trophies)}
         ${renderStat("최고 트로피", player.highestTrophies)}
         ${renderStat("레벨", player.expLevel)}
-        ${renderStat("승리(3v3)", player["3vs3Victories"])}
+        ${renderStat("3v3 승리", player["3vs3Victories"])}
         ${renderStat("솔로 승리", player.soloVictories)}
         ${renderStat("듀오 승리", player.duoVictories)}
+        ${renderStat("클럽", player.club?.name || "-")}
       </div>
+
       <div class="insight-grid">
         ${renderStat("최근 승률", `${insights.winRate ?? 0}%`)}
         ${renderStat("최근 전적", `${insights.wins ?? 0}승 ${insights.losses ?? 0}패`)}
-        ${renderStat("트로피 변화", insights.trophyDelta ?? 0)}
-        ${renderStat("자주 한 모드", insights.mostPlayedMode || "-")}
+        ${renderStat("트로피 증감", insights.trophyDelta ?? 0)}
+        ${renderStat("최다 모드", insights.mostPlayedMode || "-")}
+        ${renderStat("연속 승리", insights.currentWinStreak ?? "-")}
+        ${renderStat("평균 결과", insights.averageResult || "-")}
       </div>
-      <div class="sub-panel">
-        <h4>주력 브롤러 (Top 8)</h4>
-        <ul class="compact-list">
-          ${brawlerItems || "<li>브롤러 정보가 없습니다.</li>"}
+
+      <section class="module-box">
+        <h4>Most Played Brawlers</h4>
+        <ul class="champion-list">
+          ${brawlerItems || "<li>브롤러 데이터가 없습니다.</li>"}
         </ul>
-      </div>
-      <div class="battle-list">
-        ${battleItems || "<p>최근 전투기록이 없습니다.</p>"}
-      </div>
+      </section>
+
+      <section class="module-box">
+        <h4>Recent Matches</h4>
+        <ul class="match-list">
+          ${battleItems || "<li>최근 전투기록이 없습니다.</li>"}
+        </ul>
+      </section>
     </article>
   `;
 }
@@ -136,54 +150,59 @@ export function clearClubPanel(elements) {
 
 export function renderRankings(elements, items, rankingType) {
   if (!items.length) {
-    elements.rankingList.innerHTML = "<li>랭킹 데이터가 없습니다.</li>";
-    return;
-  }
-
-  if (rankingType === "clubs") {
-    elements.rankingList.innerHTML = items
-      .map(
-        (item) => `
-          <li>
-            <span class="name">${safeText(item.name || "-")}</span>
-            <span>${safeText(String(item.trophies ?? "-"))} trophies • 멤버 ${safeText(
-              String(item.memberCount ?? "-")
-            )}</span>
-          </li>
-        `
-      )
-      .join("");
-    return;
-  }
-
-  if (rankingType === "brawlers") {
-    elements.rankingList.innerHTML = items
-      .map(
-        (item) => `
-          <li>
-            <span class="name">${safeText(item.name || "-")}</span>
-            <span>${safeText(String(item.trophies ?? "-"))} trophies • ${safeText(item.tag || "-")}</span>
-          </li>
-        `
-      )
-      .join("");
+    elements.rankingList.innerHTML = `<li class="ranking-row"><div class="ranking-main">데이터가 없습니다.</div></li>`;
     return;
   }
 
   elements.rankingList.innerHTML = items
-    .map(
-      (item) => `
-        <li>
-          <span class="name">${safeText(item.name || "-")}</span>
-          <span>${safeText(String(item.trophies ?? "-"))} trophies</span>
+    .map((item, index) => {
+      const rank = item.rank ?? index + 1;
+
+      if (rankingType === "clubs") {
+        return `
+          <li class="ranking-row">
+            <span class="ranking-rank">#${safeText(String(rank))}</span>
+            <div class="ranking-main">
+              <span class="name">${safeText(item.name || "-")}</span>
+              <span class="meta">${safeText(String(item.trophies ?? "-"))} trophies · 멤버 ${safeText(
+                String(item.memberCount ?? "-")
+              )}</span>
+            </div>
+          </li>
+        `;
+      }
+
+      if (rankingType === "brawlers") {
+        return `
+          <li class="ranking-row">
+            <span class="ranking-rank">#${safeText(String(rank))}</span>
+            <div class="ranking-main">
+              <span class="name">${safeText(item.name || "-")}</span>
+              <span class="meta">${safeText(String(item.trophies ?? "-"))} trophies · ${safeText(item.tag || "-")}</span>
+            </div>
+          </li>
+        `;
+      }
+
+      return `
+        <li class="ranking-row">
+          <span class="ranking-rank">#${safeText(String(rank))}</span>
+          <div class="ranking-main">
+            <span class="name">${safeText(item.name || "-")}</span>
+            <span class="meta">${safeText(String(item.trophies ?? "-"))} trophies</span>
+          </div>
         </li>
-      `
-    )
+      `;
+    })
     .join("");
 }
 
 export function renderRankingMessage(elements, message) {
-  elements.rankingList.innerHTML = `<li>${safeText(message)}</li>`;
+  elements.rankingList.innerHTML = `
+    <li class="ranking-row">
+      <div class="ranking-main">${safeText(message)}</div>
+    </li>
+  `;
 }
 
 export function renderBrawlerOptions(elements, brawlers, selectedId = "") {
@@ -195,7 +214,6 @@ export function renderBrawlerOptions(elements, brawlers, selectedId = "") {
       const id = String(brawler.id || "");
       const name = safeText(brawler.name || `Brawler ${id}`);
       const isSelected = id === selected ? " selected" : "";
-
       return `<option value="${id}"${isSelected}>${name}</option>`;
     })
     .join("");
@@ -271,35 +289,42 @@ export function clearBrawlerDetail(elements) {
 export function renderClub(elements, club, members) {
   const memberItems = Array.isArray(members?.items) ? members.items : [];
   const memberRows = memberItems
-    .slice(0, 12)
+    .slice(0, 15)
     .map(
-      (member) => `
+      (member, index) => `
         <li>
-          <span class="name">${safeText(member.name || "-")}</span>
-          <span>${safeText(String(member.trophies ?? "-"))} trophies</span>
+          <span>${index + 1}. <strong>${safeText(member.name || "-")}</strong></span>
+          <span class="match-sub">${safeText(String(member.trophies ?? "-"))} trophies</span>
         </li>
       `
     )
     .join("");
 
   elements.clubPanel.innerHTML = `
-    <article class="player-summary">
-      <div class="summary-head">
-        <h3>${safeText(club?.name || "Unknown Club")}</h3>
-        <span class="tag">${safeText(club?.tag || members?.tag || "-")}</span>
+    <article class="profile-snapshot">
+      <div class="profile-head">
+        <div>
+          <h3>${safeText(club?.name || "Unknown Club")}</h3>
+          <span class="tag">${safeText(club?.tag || members?.tag || "-")}</span>
+        </div>
+        <span class="tier-chip">CLUB ${safeText(String(club?.trophies ?? "-"))}</span>
       </div>
+
       <div class="stats-grid">
         ${renderStat("클럽 점수", club?.trophies)}
         ${renderStat("요구 트로피", club?.requiredTrophies)}
         ${renderStat("멤버 수", club?.members?.length ?? memberItems.length)}
         ${renderStat("온라인", club?.onlineMembers)}
+        ${renderStat("클럽 타입", club?.type || "-")}
+        ${renderStat("설명", club?.description || "-")}
       </div>
-      <div class="sub-panel">
-        <h4>클럽 멤버 (최대 12명 미리보기)</h4>
-        <ul class="compact-list">
+
+      <section class="module-box">
+        <h4>Members</h4>
+        <ul class="champion-list">
           ${memberRows || "<li>멤버 데이터가 없습니다.</li>"}
         </ul>
-      </div>
+      </section>
     </article>
   `;
 }
@@ -308,31 +333,35 @@ export function renderEvents(elements, payload) {
   const active = Array.isArray(payload?.active) ? payload.active : [];
   const upcoming = Array.isArray(payload?.upcoming) ? payload.upcoming : [];
 
-  const toRows = (items, label) =>
-    items
-      .slice(0, 12)
-      .map((item) => {
-        const event = item.event || item;
-        const map = event.map || item.map || "Unknown Map";
-        const mode = event.mode || item.mode || "unknown";
-        const modifier = event.modifier?.name || item.modifier?.name || "-";
-        return `
-          <li>
-            <span class="name">${safeText(`[${label}] ${mode}`)}</span>
-            <span>${safeText(map)} • ${safeText(modifier)}</span>
-          </li>
-        `;
-      })
-      .join("");
+  const rows = [...active.map((item) => ({ label: "LIVE", item })), ...upcoming.map((item) => ({ label: "NEXT", item }))]
+    .slice(0, 20)
+    .map(({ label, item }, index) => {
+      const event = item.event || item;
+      const map = event.map || item.map || "Unknown Map";
+      const mode = event.mode || item.mode || "unknown";
+      const modifier = event.modifier?.name || item.modifier?.name || "-";
 
-  const html = `${toRows(active, "LIVE")}${toRows(upcoming, "NEXT")}`.trim();
-  elements.eventsList.innerHTML = html || "<li>이벤트 데이터가 없습니다.</li>";
+      return `
+        <li class="ranking-row">
+          <span class="ranking-rank">${safeText(label)}</span>
+          <div class="ranking-main">
+            <span class="name">${safeText(mode)}</span>
+            <span class="meta">${safeText(map)} · ${safeText(modifier)} · #${index + 1}</span>
+          </div>
+        </li>
+      `;
+    })
+    .join("");
+
+  elements.eventsList.innerHTML =
+    rows ||
+    `<li class="ranking-row"><div class="ranking-main">이벤트 데이터가 없습니다.</div></li>`;
 }
 
 export function renderMultiResults(elements, payload) {
   const items = Array.isArray(payload.items) ? payload.items : [];
   if (!items.length) {
-    elements.multiList.innerHTML = "<li>결과가 없습니다.</li>";
+    elements.multiList.innerHTML = "<li class=\"multi-item\">결과가 없습니다.</li>";
     return;
   }
 

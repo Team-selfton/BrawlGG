@@ -1,5 +1,7 @@
 export function getElements() {
   return {
+    sectionTabs: Array.from(document.querySelectorAll("[data-section-target]")),
+    sections: Array.from(document.querySelectorAll(".view-section")),
     form: document.getElementById("player-form"),
     input: document.getElementById("tag-input"),
     searchButton: document.getElementById("search-button"),

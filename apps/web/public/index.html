@@ -7,55 +7,70 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/public/styles.css" />
   </head>
   <body>
-    <div class="bg-shape bg-shape-1"></div>
-    <div class="bg-shape bg-shape-2"></div>
-    <div class="container">
-      <header class="hero">
-        <p class="badge">BRAWL STARS STATS</p>
-        <h1>BrawlGG</h1>
-        <p class="subtitle">플레이어 태그로 전적, 트로피, 최근 전투를 빠르게 확인하세요.</p>
-      </header>
+    <header class="top-header">
+      <div class="container top-header-main">
+        <a class="brand" href="/" aria-label="BrawlGG 홈">BrawlGG</a>
 
-      <section class="auth-strip card">
-        <div>
-          <h2>계정 인증</h2>
-          <p id="auth-status" class="status">인증 상태를 확인하는 중...</p>
+        <form id="player-form" class="header-search">
+          <label for="tag-input" class="sr-only">플레이어 태그</label>
+          <input id="tag-input" name="tag" type="text" placeholder="#2PP 또는 2PP" required />
+          <button id="search-button" type="submit">Search</button>
+        </form>
+
+        <div class="auth-box">
+          <p id="auth-status" class="status compact">인증 상태를 확인하는 중...</p>
+          <div class="auth-actions">
+            <button id="login-button" type="button">OAuth 로그인</button>
+            <button id="logout-button" class="ghost" type="button">로그아웃</button>
+          </div>
         </div>
-        <div class="auth-actions">
-          <button id="login-button" type="button">Supercell OAuth 로그인</button>
-          <button id="logout-button" class="ghost" type="button">로그아웃</button>
+      </div>
+
+      <div class="top-header-sub">
+        <div class="container section-nav">
+          <button class="section-tab active" type="button" data-section-target="summary">
+            Summary
+          </button>
+          <button class="section-tab" type="button" data-section-target="rankings">Rankings</button>
+          <button class="section-tab" type="button" data-section-target="multi">Multi-Search</button>
+          <button class="section-tab" type="button" data-section-target="club">Club</button>
+          <button class="section-tab" type="button" data-section-target="events">Events</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container main-content">
+      <section id="section-summary" class="view-section active">
+        <div class="section-card">
+          <div class="section-head">
+            <h2>Summoner Summary</h2>
+            <p id="status" class="status">태그를 검색하면 최신 전적 요약이 표시됩니다.</p>
+          </div>
+          <div id="player-panel" class="panel"></div>
         </div>
       </section>
 
-      <main class="grid">
-        <section class="card">
-          <h2>플레이어 검색</h2>
-          <form id="player-form" class="search-form">
-            <label for="tag-input">플레이어 태그</label>
-            <div class="row">
-              <input id="tag-input" name="tag" type="text" placeholder="#2PP 또는 2PP" required />
-              <button id="search-button" type="submit">조회</button>
-            </div>
-          </form>
-          <p id="status" class="status">태그를 입력하면 데이터를 불러옵니다.</p>
-          <div id="player-panel" class="panel"></div>
-        </section>
+      <section id="section-rankings" class="view-section">
+        <div class="section-card">
+          <div class="section-head">
+            <h2>Leaderboards</h2>
+            <p class="status compact">플레이어/클럽/브롤러 랭킹을 지역 단위로 조회합니다.</p>
+          </div>
 
-        <section class="card">
-          <h2>글로벌/국가 랭킹</h2>
-          <div class="row">
+          <div class="toolbar">
             <label for="ranking-type" class="sr-only">랭킹 타입</label>
             <select id="ranking-type">
               <option value="players">Players</option>
               <option value="clubs">Clubs</option>
               <option value="brawlers">Brawler Leaderboard</option>
             </select>
+
             <label for="country-select" class="sr-only">국가 선택</label>
             <select id="country-select">
               <option value="global">Global</option>
@@ -65,52 +80,33 @@
               <option value="de">Germany</option>
               <option value="fr">France</option>
             </select>
+
             <label for="brawler-select" class="sr-only">브롤러 선택</label>
             <select id="brawler-select" class="hidden">
               <option value="16000000">Shelly</option>
             </select>
-            <button id="load-ranking" type="button">랭킹 불러오기</button>
-            <button id="brawler-detail-button" class="ghost" type="button">브롤러 상세</button>
-            <button id="location-info-button" class="ghost" type="button">지역 상세</button>
-            <button id="reload-locations-button" class="ghost" type="button">국가 동기화</button>
+
+            <button id="load-ranking" type="button">Load</button>
+            <button id="brawler-detail-button" class="ghost" type="button">Brawler Detail</button>
+            <button id="location-info-button" class="ghost" type="button">Region Detail</button>
+            <button id="reload-locations-button" class="ghost" type="button">Sync Countries</button>
           </div>
+
           <ol id="ranking-list" class="ranking-list"></ol>
           <div id="brawler-detail-panel" class="panel"></div>
           <div id="location-info-panel" class="panel"></div>
-        </section>
+        </div>
+      </section>
 
-        <section class="card">
-          <h2>클럽 검색</h2>
-          <form id="club-form" class="search-form">
-            <label for="club-tag-input">클럽 태그</label>
-            <div class="row">
-              <input
-                id="club-tag-input"
-                name="clubTag"
-                type="text"
-                placeholder="#YQ0L8C 또는 YQ0L8C"
-                required
-              />
-              <button id="club-search-button" type="submit">클럽 조회</button>
-            </div>
-          </form>
-          <p id="club-status" class="status">클럽 태그를 입력하면 정보와 멤버를 조회합니다.</p>
-          <div id="club-panel" class="panel"></div>
-        </section>
-
-        <section class="card">
-          <h2>이벤트 로테이션</h2>
-          <div class="row">
-            <button id="events-load-button" type="button">이벤트 로딩</button>
+      <section id="section-multi" class="view-section">
+        <div class="section-card">
+          <div class="section-head">
+            <h2>Multi-Search</h2>
+            <p id="multi-status" class="status">여러 태그를 쉼표로 입력해 한 번에 조회하세요.</p>
           </div>
-          <p id="events-status" class="status">활성/예정 이벤트를 확인하세요.</p>
-          <ol id="events-list" class="ranking-list"></ol>
-        </section>
 
-        <section class="card card-wide">
-          <h2>멀티 검색 (Multi-Search)</h2>
-          <form id="multi-form" class="search-form">
-            <label for="multi-input">여러 플레이어 태그</label>
+          <form id="multi-form" class="stack-form">
+            <label for="multi-input">플레이어 태그 목록</label>
             <textarea
               id="multi-input"
               rows="3"
@@ -118,11 +114,42 @@
             ></textarea>
             <button id="multi-button" type="submit">멀티 검색</button>
           </form>
-          <p id="multi-status" class="status">여러 태그를 한 번에 조회해 최근 성과를 비교하세요.</p>
+
           <ul id="multi-list" class="multi-list"></ul>
-        </section>
-      </main>
-    </div>
+        </div>
+      </section>
+
+      <section id="section-club" class="view-section">
+        <div class="section-card">
+          <div class="section-head">
+            <h2>Club Lookup</h2>
+            <p id="club-status" class="status">클럽 태그로 프로필과 멤버를 조회합니다.</p>
+          </div>
+
+          <form id="club-form" class="inline-form">
+            <label for="club-tag-input" class="sr-only">클럽 태그</label>
+            <input id="club-tag-input" name="clubTag" type="text" placeholder="#YQ0L8C 또는 YQ0L8C" required />
+            <button id="club-search-button" type="submit">클럽 조회</button>
+          </form>
+
+          <div id="club-panel" class="panel"></div>
+        </div>
+      </section>
+
+      <section id="section-events" class="view-section">
+        <div class="section-card">
+          <div class="section-head">
+            <h2>Event Rotation</h2>
+            <p id="events-status" class="status">현재/예정 이벤트를 불러옵니다.</p>
+          </div>
+
+          <div class="toolbar">
+            <button id="events-load-button" type="button">이벤트 불러오기</button>
+          </div>
+          <ol id="events-list" class="ranking-list"></ol>
+        </div>
+      </section>
+    </main>
 
     <script type="module" src="/src/main.js"></script>
   </body>

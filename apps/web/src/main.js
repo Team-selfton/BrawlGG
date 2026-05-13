@@ -44,6 +44,7 @@ import {
 } from "./application/gameApplication.js";
 
 const elements = getElements();
+let activeSection = "summary";
 
 const state = {
   requireLoginForApi: false,
@@ -62,6 +63,21 @@ function syncAuthButtons() {
     oauthEnabled: state.oauthEnabled,
     authenticated: state.authenticated
   });
+}
+
+function switchSection(sectionName) {
+  const targetName = sectionName || "summary";
+  activeSection = targetName;
+
+  for (const section of elements.sections) {
+    const isActive = section.id === `section-${targetName}`;
+    section.classList.toggle("active", isActive);
+  }
+
+  for (const tab of elements.sectionTabs) {
+    const isActive = tab.dataset.sectionTarget === targetName;
+    tab.classList.toggle("active", isActive);
+  }
 }
 
 function isApiAccessLocked() {
@@ -163,6 +179,7 @@ async function loadLocationCatalogIfAvailable(force = false) {
 
 async function onSubmitPlayerSearch(event) {
   event.preventDefault();
+  switchSection("summary");
 
   const { lockedByAuth, lockedByToken } = isApiAccessLocked();
   if (lockedByToken) {
@@ -189,6 +206,7 @@ async function onSubmitPlayerSearch(event) {
 
 async function onSubmitClubSearch(event) {
   event.preventDefault();
+  switchSection("club");
 
   const { lockedByAuth, lockedByToken } = isApiAccessLocked();
   if (lockedByToken) {
@@ -216,6 +234,7 @@ async function onSubmitClubSearch(event) {
 }
 
 async function onLoadRankings() {
+  switchSection("rankings");
   const { lockedByAuth, lockedByToken } = isApiAccessLocked();
   if (lockedByToken) {
     renderRankingMessage(elements, "서버에 BRAWL_API_TOKEN이 설정되지 않았습니다.");
@@ -286,6 +305,7 @@ async function onLoadBrawlerDetail() {
 }
 
 async function onLoadEvents() {
+  switchSection("events");
   const { lockedByAuth, lockedByToken } = isApiAccessLocked();
   if (lockedByToken) {
     setEventsStatus(elements, "서버에 BRAWL_API_TOKEN이 없어 조회할 수 없습니다.", true);
@@ -323,6 +343,7 @@ async function onLoadEvents() {
 
 async function onSubmitMultiSearch(event) {
   event.preventDefault();
+  switchSection("multi");
 
   const { lockedByAuth, lockedByToken } = isApiAccessLocked();
   if (lockedByToken) {
@@ -405,6 +426,12 @@ function resolveLocationIdByCountryCode(countryCode) {
 }
 
 function bindEvents() {
+  for (const tab of elements.sectionTabs) {
+    tab.addEventListener("click", () => {
+      switchSection(tab.dataset.sectionTarget || "summary");
+    });
+  }
+
   elements.form.addEventListener("submit", onSubmitPlayerSearch);
   elements.clubForm.addEventListener("submit", onSubmitClubSearch);
   elements.multiForm.addEventListener("submit", onSubmitMultiSearch);
@@ -419,6 +446,7 @@ function bindEvents() {
 }
 
 async function bootstrap() {
+  switchSection(activeSection);
   bindEvents();
   syncBrawlerFilterVisibility();
   await refreshHealthAndAuth();
