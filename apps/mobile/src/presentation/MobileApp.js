@@ -29,9 +29,7 @@ import {
 import { toCompactPlayerStats } from "../domain/playerFormatting";
 import {
   getApiBaseUrl,
-  getDefaultApiBaseUrl,
-  hydrateRuntimeConfig,
-  setApiBaseUrl
+  hydrateRuntimeConfig
 } from "../shared/config/runtimeConfig";
 import { getAuthTokens } from "../shared/storage/tokenStore";
 
@@ -48,7 +46,6 @@ export default function MobileApp() {
   const [busy, setBusy] = useState(false);
   const [activeView, setActiveView] = useState("summary");
 
-  const [apiBaseUrlInput, setApiBaseUrlInput] = useState("");
   const [health, setHealth] = useState({
     brawlApiTokenConfigured: false,
     oauthEnabled: false,
@@ -114,7 +111,6 @@ export default function MobileApp() {
 
   async function bootstrap() {
     await hydrateRuntimeConfig();
-    setApiBaseUrlInput(getApiBaseUrl());
     await refreshSystemStatus();
     setBooting(false);
   }
@@ -139,9 +135,9 @@ export default function MobileApp() {
       });
 
       setHasStoredTokens(Boolean(storedTokens?.accessToken));
-      setNotice("서버 연결 상태를 갱신했습니다.");
+      setNotice("연결됨 · 바로 검색할 수 있어요.");
     } catch {
-      setNotice("서버 연결 실패. API 주소를 확인하세요.");
+      setNotice("서버 연결 실패. 같은 Wi-Fi에서 서버를 실행해 주세요.");
       setAuth({ authenticated: false, user: null });
       setHealth({
         brawlApiTokenConfigured: false,
@@ -158,28 +154,6 @@ export default function MobileApp() {
 
     setNotice("모바일 OAuth 토큰 저장 완료");
     await refreshSystemStatus();
-  }
-
-  async function onSaveApiBaseUrl() {
-    setBusy(true);
-    try {
-      const updated = await setApiBaseUrl(apiBaseUrlInput);
-      setApiBaseUrlInput(updated);
-      await refreshSystemStatus();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onResetApiBaseUrl() {
-    setBusy(true);
-    try {
-      const updated = await setApiBaseUrl(getDefaultApiBaseUrl());
-      setApiBaseUrlInput(updated);
-      await refreshSystemStatus();
-    } finally {
-      setBusy(false);
-    }
   }
 
   async function onLogin() {
@@ -354,19 +328,6 @@ export default function MobileApp() {
           />
           <StatRow label="로컬 토큰" value={hasStoredTokens ? "저장됨" : "없음"} />
 
-          <TextInput
-            style={styles.input}
-            value={apiBaseUrlInput}
-            onChangeText={setApiBaseUrlInput}
-            autoCapitalize="none"
-            placeholder="http://127.0.0.1:3000"
-            placeholderTextColor="#7d8aa8"
-          />
-
-          <View style={styles.buttonRow}>
-            <ActionButton label="API 주소 저장" onPress={onSaveApiBaseUrl} disabled={busy} />
-            <ActionButton label="기본값 복원" onPress={onResetApiBaseUrl} ghost disabled={busy} />
-          </View>
           <View style={styles.buttonRow}>
             <ActionButton label="OAuth 로그인" onPress={onLogin} disabled={busy || !health.oauthEnabled} />
             <ActionButton label="로그아웃" onPress={onLogout} ghost disabled={busy} />

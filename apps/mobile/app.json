@@ -28,9 +28,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-secure-store"],
-    "extra": {
-      "apiBaseUrl": "http://127.0.0.1:3000"
-    }
+    "plugins": ["expo-secure-store"]
   }
 }

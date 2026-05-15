@@ -8,8 +8,17 @@ let runtimeApiBaseUrl = normalizeApiBaseUrl(readDefaultApiBaseUrl());
 let initialized = false;
 
 function readDefaultApiBaseUrl() {
+  const envBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (envBaseUrl) return envBaseUrl;
+
   const extra = Constants.expoConfig?.extra || {};
-  return extra.apiBaseUrl || FALLBACK_API_BASE_URL;
+  if (extra.apiBaseUrl) return extra.apiBaseUrl;
+
+  const hostUri = readExpoHostUri();
+  const inferredBaseUrl = inferApiBaseUrlFromHostUri(hostUri);
+  if (inferredBaseUrl) return inferredBaseUrl;
+
+  return FALLBACK_API_BASE_URL;
 }
 
 function normalizeApiBaseUrl(value) {
@@ -17,6 +26,41 @@ function normalizeApiBaseUrl(value) {
   if (!raw) return FALLBACK_API_BASE_URL;
 
   return raw.replace(/\/+$/, "");
+}
+
+function readExpoHostUri() {
+  const hostCandidates = [
+    Constants.expoConfig?.hostUri,
+    Constants.expoGoConfig?.debuggerHost,
+    Constants.manifest2?.extra?.expoGo?.debuggerHost
+  ];
+
+  return hostCandidates.find((candidate) => typeof candidate === "string" && candidate.trim()) || "";
+}
+
+function inferApiBaseUrlFromHostUri(hostUri) {
+  if (!hostUri) return "";
+
+  const raw = String(hostUri).trim();
+  let host = "";
+
+  if (raw.includes("://")) {
+    try {
+      host = new URL(raw).hostname;
+    } catch {
+      host = "";
+    }
+  } else {
+    host = raw.split(":")[0] || "";
+  }
+
+  host = host.trim();
+  if (!host) return "";
+  if (host === "127.0.0.1" || host === "localhost") return "";
+  if (host.endsWith(".exp.direct")) return "";
+  if (host.includes("ngrok") || host.includes("tunnel")) return "";
+
+  return `http://${host}:3000`;
 }
 
 export async function hydrateRuntimeConfig() {
