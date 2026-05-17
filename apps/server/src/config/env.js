@@ -37,6 +37,9 @@ function loadConfig(env = process.env) {
     Boolean(oauth.tokenUrl) &&
     Boolean(oauth.redirectUri);
 
+  const splitToken = `${env.BRAWL_API_TOKEN_P1 || ""}${env.BRAWL_API_TOKEN_P2 || ""}`;
+  const resolvedBrawlApiToken = env.BRAWL_API_TOKEN || splitToken;
+
   return {
     server: {
       port,
@@ -46,7 +49,7 @@ function loadConfig(env = process.env) {
     },
     brawl: {
       apiBaseUrl: env.BRAWL_API_BASE_URL || "https://api.brawlstars.com/v1",
-      apiToken: env.BRAWL_API_TOKEN || ""
+      apiToken: resolvedBrawlApiToken
     },
     auth: {
       requireLoginForApi: toBoolean(env.REQUIRE_LOGIN_FOR_API || "false", false),
