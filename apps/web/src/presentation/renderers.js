@@ -27,6 +27,7 @@ export function setEventsStatus(elements, message, isError = false) {
 
 export function applyInteractionLock(elements, locked) {
   const controls = [
+    elements.nameInput,
     elements.input,
     elements.searchButton,
     elements.rankingButton,
@@ -50,8 +51,14 @@ export function applyInteractionLock(elements, locked) {
 }
 
 export function applyAuthButtons(elements, { oauthEnabled, authenticated }) {
+  if (!elements.loginButton || !elements.logoutButton) return;
   elements.loginButton.disabled = !oauthEnabled || authenticated;
   elements.logoutButton.disabled = !authenticated;
+}
+
+export function setAuthBoxVisibility(elements, visible) {
+  if (!elements.authBox) return;
+  elements.authBox.classList.toggle("hidden", !visible);
 }
 
 export function setBrawlerFilterVisibility(elements, visible) {

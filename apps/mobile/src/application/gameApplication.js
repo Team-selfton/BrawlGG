@@ -1,9 +1,19 @@
-import { sanitizeTag } from "../domain/playerFormatting";
+import { sanitizePlayerName, sanitizeTag } from "../domain/playerFormatting";
 import { fetchJson } from "../shared/http/apiClient";
 
 export async function loadPlayerOverview(rawTag) {
   const tag = sanitizeTag(rawTag);
   return fetchJson(`/api/player/${encodeURIComponent(tag)}/overview`);
+}
+
+export async function loadPlayerOverviewByIdentity(rawName, rawTag) {
+  const name = sanitizePlayerName(rawName);
+  const tag = sanitizeTag(rawTag);
+  const query = new URLSearchParams({
+    name,
+    tag
+  });
+  return fetchJson(`/api/player/identity/overview?${query.toString()}`);
 }
 
 export async function loadRankings({ type, country, brawlerId, limit = 20 }) {

@@ -57,6 +57,27 @@ class GameDataService {
     };
   }
 
+  async getPlayerOverviewByIdentity(rawName, rawTag) {
+    const expectedName = normalizePlayerName(rawName);
+    if (!expectedName) {
+      throw new HttpError(400, "INVALID_PLAYER_NAME", "Player name is missing or invalid.");
+    }
+
+    const overview = await this.getPlayerOverview(rawTag);
+    const actualName = normalizePlayerName(overview.player?.name);
+    const identityMatched = comparePlayerNames(expectedName, actualName);
+
+    return {
+      ...overview,
+      identityMatched,
+      identity: {
+        expectedName,
+        actualName: overview.player?.name || "",
+        resolvedTag: overview.player?.tag || `#${this.#resolveTag(rawTag)}`
+      }
+    };
+  }
+
   async getMultiPlayerOverview(rawTags) {
     const tags = parsePlayerTags(rawTags, 10);
     if (!tags.length) {
@@ -228,6 +249,17 @@ function parsePositiveInteger(rawValue, reason, message) {
   }
 
   return parsed;
+}
+
+function normalizePlayerName(rawName) {
+  return String(rawName || "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function comparePlayerNames(expectedName, actualName) {
+  if (!expectedName || !actualName) return false;
+  return expectedName.toLowerCase() === actualName.toLowerCase();
 }
 
 function resolveLocationId(rawLocationId) {

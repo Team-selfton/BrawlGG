@@ -1,9 +1,19 @@
 import { fetchJson } from "../shared/apiClient.js";
-import { sanitizeTag } from "../domain/playerFormatting.js";
+import { sanitizePlayerName, sanitizeTag } from "../domain/playerFormatting.js";
 
 export async function loadPlayerOverview(rawTag) {
   const tag = sanitizeTag(rawTag);
   return fetchJson(`/api/player/${encodeURIComponent(tag)}/overview`);
+}
+
+export async function loadPlayerOverviewByIdentity(rawName, rawTag) {
+  const name = sanitizePlayerName(rawName);
+  const tag = sanitizeTag(rawTag);
+  const query = new URLSearchParams({
+    name,
+    tag
+  });
+  return fetchJson(`/api/player/identity/overview?${query.toString()}`);
 }
 
 export async function loadClub(rawTag) {

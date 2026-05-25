@@ -23,7 +23,7 @@ import {
   loadEventRotation,
   loadHealth,
   loadMultiPlayerOverview,
-  loadPlayerOverview,
+  loadPlayerOverviewByIdentity,
   loadRankings
 } from "../application/gameApplication";
 import { toCompactPlayerStats } from "../domain/playerFormatting";
@@ -58,9 +58,10 @@ export default function MobileApp() {
   const [hasStoredTokens, setHasStoredTokens] = useState(false);
   const [notice, setNotice] = useState("초기화 중...");
 
+  const [playerNameInput, setPlayerNameInput] = useState("");
   const [playerTagInput, setPlayerTagInput] = useState("");
   const [playerOverview, setPlayerOverview] = useState(null);
-  const [playerStatus, setPlayerStatus] = useState("플레이어 태그를 입력하세요.");
+  const [playerStatus, setPlayerStatus] = useState("유저이름 + 태그를 입력하세요.");
 
   const [rankingType, setRankingType] = useState("players");
   const [countryCode, setCountryCode] = useState("global");
@@ -135,7 +136,11 @@ export default function MobileApp() {
       });
 
       setHasStoredTokens(Boolean(storedTokens?.accessToken));
-      setNotice("연결됨 · 바로 검색할 수 있어요.");
+      if (Boolean(healthResponse?.requireLoginForApi)) {
+        setNotice("연결됨 · 로그인 후 검색할 수 있어요.");
+      } else {
+        setNotice("연결됨 · 로그인 없이 바로 검색할 수 있어요.");
+      }
     } catch {
       setNotice("서버 연결 실패. 같은 Wi-Fi에서 서버를 실행해 주세요.");
       setAuth({ authenticated: false, user: null });
@@ -188,6 +193,11 @@ export default function MobileApp() {
       return;
     }
 
+    if (!playerNameInput.trim()) {
+      setPlayerStatus("유저이름을 입력하세요.");
+      return;
+    }
+
     if (!playerTagInput.trim()) {
       setPlayerStatus("플레이어 태그를 입력하세요.");
       return;
@@ -195,9 +205,16 @@ export default function MobileApp() {
 
     setPlayerStatus("플레이어 조회 중...");
     try {
-      const response = await loadPlayerOverview(playerTagInput);
+      const response = await loadPlayerOverviewByIdentity(playerNameInput, playerTagInput);
       setPlayerOverview(response);
-      setPlayerStatus("플레이어 조회 완료");
+      if (response.identityMatched) {
+        setPlayerStatus("플레이어 조회 완료");
+      } else {
+        const actualName = response.identity?.actualName || response.player?.name || "-";
+        setPlayerStatus(
+          `조회 완료 (이름 불일치: 입력 "${playerNameInput.trim()}" / 실제 "${actualName}")`
+        );
+      }
     } catch (error) {
       setPlayerOverview(null);
       setPlayerStatus(error.message || "플레이어 조회 실패");
@@ -307,6 +324,8 @@ export default function MobileApp() {
   }
 
   const compact = playerOverview ? toCompactPlayerStats(playerOverview) : null;
+  const showAuthActions =
+    health.requireLoginForApi || health.oauthEnabled || auth.authenticated || hasStoredTokens;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -321,29 +340,48 @@ export default function MobileApp() {
           <Text style={styles.notice}>{notice}</Text>
           <StatRow label="API Base URL" value={getApiBaseUrl()} />
           <StatRow label="서버 API 토큰" value={health.brawlApiTokenConfigured ? "설정됨" : "미설정"} />
+          <StatRow label="API 접근" value={health.requireLoginForApi ? "로그인 필요" : "로그인 없이 가능"} />
           <StatRow label="OAuth" value={health.oauthEnabled ? "활성" : "비활성"} />
           <StatRow
             label="인증"
-            value={auth.authenticated ? `로그인됨 (${auth.user?.name || auth.user?.sub || "user"})` : "로그인 안됨"}
+            value={
+              auth.authenticated
+                ? `로그인됨 (${auth.user?.name || auth.user?.sub || "user"})`
+                : health.requireLoginForApi
+                  ? "로그인 안됨"
+                  : "선택 로그인"
+            }
           />
-          <StatRow label="로컬 토큰" value={hasStoredTokens ? "저장됨" : "없음"} />
+          {showAuthActions ? <StatRow label="로컬 토큰" value={hasStoredTokens ? "저장됨" : "없음"} /> : null}
 
-          <View style={styles.buttonRow}>
-            <ActionButton label="OAuth 로그인" onPress={onLogin} disabled={busy || !health.oauthEnabled} />
-            <ActionButton label="로그아웃" onPress={onLogout} ghost disabled={busy} />
-          </View>
+          {showAuthActions ? (
+            <View style={styles.buttonRow}>
+              <ActionButton label="OAuth 로그인" onPress={onLogin} disabled={busy || !health.oauthEnabled} />
+              <ActionButton label="로그아웃" onPress={onLogout} ghost disabled={busy} />
+            </View>
+          ) : null}
         </View>
 
-        <View style={styles.searchRow}>
+        <View style={styles.searchStack}>
           <TextInput
-            style={[styles.input, styles.searchInput]}
-            value={playerTagInput}
-            onChangeText={setPlayerTagInput}
-            autoCapitalize="characters"
-            placeholder="#2PP"
+            style={styles.input}
+            value={playerNameInput}
+            onChangeText={setPlayerNameInput}
+            autoCapitalize="none"
+            placeholder="유저이름"
             placeholderTextColor="#7d8aa8"
           />
-          <ActionButton label="Search" onPress={onLoadPlayer} />
+          <View style={styles.searchRow}>
+            <TextInput
+              style={[styles.input, styles.searchInput]}
+              value={playerTagInput}
+              onChangeText={setPlayerTagInput}
+              autoCapitalize="characters"
+              placeholder="#2PP"
+              placeholderTextColor="#7d8aa8"
+            />
+            <ActionButton label="Search" onPress={onLoadPlayer} />
+          </View>
         </View>
 
         <View style={styles.navRow}>
@@ -722,6 +760,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center"
+  },
+  searchStack: {
+    gap: 8
   },
   searchInput: {
     flex: 1

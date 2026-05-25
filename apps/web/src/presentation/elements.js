@@ -3,6 +3,7 @@ export function getElements() {
     sectionTabs: Array.from(document.querySelectorAll("[data-section-target]")),
     sections: Array.from(document.querySelectorAll(".view-section")),
     form: document.getElementById("player-form"),
+    nameInput: document.getElementById("name-input"),
     input: document.getElementById("tag-input"),
     searchButton: document.getElementById("search-button"),
     statusText: document.getElementById("status"),
@@ -30,6 +31,7 @@ export function getElements() {
     multiButton: document.getElementById("multi-button"),
     multiStatus: document.getElementById("multi-status"),
     multiList: document.getElementById("multi-list"),
+    authBox: document.getElementById("auth-box"),
     authStatus: document.getElementById("auth-status"),
     loginButton: document.getElementById("login-button"),
     logoutButton: document.getElementById("logout-button")

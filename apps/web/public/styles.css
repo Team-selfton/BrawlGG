@@ -78,7 +78,8 @@ button {
 }
 
 .header-search input {
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 0.72rem 0.78rem;
   border-radius: 8px;
   border: 1px solid transparent;

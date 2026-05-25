@@ -18,12 +18,14 @@
         <a class="brand" href="/" aria-label="BrawlGG 홈">BrawlGG</a>
 
         <form id="player-form" class="header-search">
+          <label for="name-input" class="sr-only">플레이어 이름</label>
+          <input id="name-input" name="name" type="text" placeholder="유저이름" required />
           <label for="tag-input" class="sr-only">플레이어 태그</label>
           <input id="tag-input" name="tag" type="text" placeholder="#2PP 또는 2PP" required />
           <button id="search-button" type="submit">Search</button>
         </form>
 
-        <div class="auth-box">
+        <div id="auth-box" class="auth-box">
           <p id="auth-status" class="status compact">인증 상태를 확인하는 중...</p>
           <div class="auth-actions">
             <button id="login-button" type="button">OAuth 로그인</button>
@@ -50,7 +52,7 @@
         <div class="section-card">
           <div class="section-head">
             <h2>Summoner Summary</h2>
-            <p id="status" class="status">태그를 검색하면 최신 전적 요약이 표시됩니다.</p>
+            <p id="status" class="status">유저이름 + 태그를 검색하면 최신 전적 요약이 표시됩니다.</p>
           </div>
           <div id="player-panel" class="panel"></div>
         </div>

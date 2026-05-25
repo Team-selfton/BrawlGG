@@ -42,6 +42,14 @@ function createApiRouter({ useCases, openApiSpec }) {
         return sendJson(res, 200, multiResult);
       }
 
+      if (pathname === "/api/player/identity/overview") {
+        const overview = await useCases.getPlayerOverviewByIdentity(
+          reqUrl.searchParams.get("name"),
+          reqUrl.searchParams.get("tag")
+        );
+        return sendJson(res, 200, overview);
+      }
+
       if (pathname.startsWith("/api/player/")) {
         return await handlePlayerRoute(reqUrl, res, useCases);
       }

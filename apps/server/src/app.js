@@ -10,6 +10,7 @@ const { createGetHealthStatusUseCase } = require("./application/usecases/health/
 const { createGetPlayerProfileUseCase } = require("./application/usecases/game/getPlayerProfile");
 const { createGetPlayerBattlelogUseCase } = require("./application/usecases/game/getPlayerBattlelog");
 const { createGetPlayerOverviewUseCase } = require("./application/usecases/game/getPlayerOverview");
+const { createGetPlayerOverviewByIdentityUseCase } = require("./application/usecases/game/getPlayerOverviewByIdentity");
 const { createGetMultiPlayerOverviewUseCase } = require("./application/usecases/game/getMultiPlayerOverview");
 const { createGetPlayerRankingsUseCase } = require("./application/usecases/game/getPlayerRankings");
 const { createGetClubRankingsUseCase } = require("./application/usecases/game/getClubRankings");
@@ -64,6 +65,7 @@ function createApp() {
     getPlayerProfile: createGetPlayerProfileUseCase({ gameDataService }),
     getPlayerBattlelog: createGetPlayerBattlelogUseCase({ gameDataService }),
     getPlayerOverview: createGetPlayerOverviewUseCase({ gameDataService }),
+    getPlayerOverviewByIdentity: createGetPlayerOverviewByIdentityUseCase({ gameDataService }),
     getMultiPlayerOverview: createGetMultiPlayerOverviewUseCase({ gameDataService }),
     getClub: createGetClubUseCase({ gameDataService }),
     getClubMembers: createGetClubMembersUseCase({ gameDataService }),

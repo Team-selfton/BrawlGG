@@ -5,6 +5,12 @@ export function sanitizeTag(rawTag) {
     .replace(/^#/, "");
 }
 
+export function sanitizePlayerName(rawName) {
+  return String(rawName || "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 export function toBattleViewModel(item) {
   const battle = item.battle || {};
   const event = item.event || {};

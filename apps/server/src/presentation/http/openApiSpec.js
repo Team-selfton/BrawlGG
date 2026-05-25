@@ -3,7 +3,7 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
     openapi: "3.0.3",
     info: {
       title: "BrawlGG API",
-      version: "2.2.0",
+      version: "2.3.0",
       description: "JWT Access/Refresh 재발급 구조를 사용하는 BrawlGG API 명세입니다."
     },
     servers: [
@@ -235,6 +235,54 @@ function createOpenApiSpec({ appBaseUrl, accessTokenTtlSec }) {
       },
       "/api/player/{tag}/battlelog": {
         get: createPlayerOperation("플레이어 배틀로그 조회")
+      },
+      "/api/player/identity/overview": {
+        get: {
+          tags: ["Player"],
+          summary: "이름 + 태그로 플레이어 오버뷰 조회 (이름 일치 여부 포함)",
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            {
+              name: "name",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "BrawlerUser" }
+            },
+            {
+              name: "tag",
+              in: "query",
+              required: true,
+              schema: { type: "string", example: "2PP" }
+            }
+          ],
+          responses: {
+            200: {
+              description: "조회 성공",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      identityMatched: { type: "boolean", example: true },
+                      identity: {
+                        type: "object",
+                        properties: {
+                          expectedName: { type: "string", example: "BrawlerUser" },
+                          actualName: { type: "string", example: "BrawlerUser" },
+                          resolvedTag: { type: "string", example: "#2PP" }
+                        }
+                      },
+                      player: { type: "object", additionalProperties: true },
+                      battlelog: { type: "object", additionalProperties: true },
+                      insights: { type: "object", additionalProperties: true },
+                      topBrawlers: { type: "array", items: { type: "object", additionalProperties: true } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "/api/club/{tag}": {
         get: createClubOperation("클럽 프로필 조회")

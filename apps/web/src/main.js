@@ -15,6 +15,7 @@ import {
   renderPlayer,
   renderRankingMessage,
   renderRankings,
+  setAuthBoxVisibility,
   setAuthStatus,
   setBrawlerFilterVisibility,
   setClubStatus,
@@ -39,7 +40,7 @@ import {
   loadLocation,
   loadLocations,
   loadMultiPlayerOverview,
-  loadPlayerOverview,
+  loadPlayerOverviewByIdentity,
   loadRankings
 } from "./application/gameApplication.js";
 
@@ -63,6 +64,11 @@ function syncAuthButtons() {
     oauthEnabled: state.oauthEnabled,
     authenticated: state.authenticated
   });
+  setAuthBoxVisibility(elements, shouldShowAuthBox());
+}
+
+function shouldShowAuthBox() {
+  return state.requireLoginForApi || state.oauthEnabled || state.authenticated;
 }
 
 function switchSection(sectionName) {
@@ -126,8 +132,10 @@ async function refreshHealthAndAuth() {
 
     if (state.authenticated && state.user) {
       setAuthStatus(elements, `로그인됨: ${state.user.name || state.user.sub}`);
-    } else if (!state.oauthEnabled) {
-      setAuthStatus(elements, "OAuth 설정이 아직 서버에 적용되지 않았습니다.", true);
+    } else if (!state.requireLoginForApi && !state.oauthEnabled) {
+      setAuthStatus(elements, "로그인 없이 바로 검색할 수 있습니다.");
+    } else if (!state.requireLoginForApi && state.oauthEnabled) {
+      setAuthStatus(elements, "로그인은 선택 사항입니다. 바로 검색할 수 있습니다.");
     } else {
       setAuthStatus(elements, "로그인되지 않음");
     }
@@ -192,13 +200,35 @@ async function onSubmitPlayerSearch(event) {
     return;
   }
 
+  const playerName = String(elements.nameInput?.value || "").trim();
+  if (!playerName) {
+    setStatus(elements, "유저이름을 입력해 주세요.", true);
+    return;
+  }
+  const playerTag = String(elements.input?.value || "").trim();
+  if (!playerTag) {
+    setStatus(elements, "플레이어 태그를 입력해 주세요.", true);
+    return;
+  }
+
   setStatus(elements, "플레이어 데이터 로딩 중...");
   clearPlayerPanel(elements);
 
   try {
-    const overview = await loadPlayerOverview(elements.input.value);
+    const overview = await loadPlayerOverviewByIdentity(playerName, playerTag);
     renderPlayer(elements, overview);
-    setStatus(elements, "조회 완료");
+
+    if (overview.identityMatched) {
+      setStatus(elements, "조회 완료");
+      return;
+    }
+
+    const actualName = overview.identity?.actualName || overview.player?.name || "-";
+    setStatus(
+      elements,
+      `조회 완료 (이름 불일치: 입력 "${playerName}" / 실제 "${actualName}" · 태그 기준으로 조회됨)`,
+      true
+    );
   } catch (error) {
     setStatus(elements, error.message || "플레이어 조회 실패", true);
   }
@@ -441,8 +471,12 @@ function bindEvents() {
   elements.brawlerDetailButton.addEventListener("click", onLoadBrawlerDetail);
   elements.eventsButton.addEventListener("click", onLoadEvents);
   elements.rankingTypeSelect.addEventListener("change", onRankingTypeChange);
-  elements.loginButton.addEventListener("click", startOAuthLogin);
-  elements.logoutButton.addEventListener("click", onLogout);
+  if (elements.loginButton) {
+    elements.loginButton.addEventListener("click", startOAuthLogin);
+  }
+  if (elements.logoutButton) {
+    elements.logoutButton.addEventListener("click", onLogout);
+  }
 }
 
 async function bootstrap() {
