@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "BrawlGG",
-    "slug": "brawlgg-mobile",
+    "name": "BrawlGG Clone",
+    "slug": "brawlgg-mobile-clone",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "brawlgg",
+    "scheme": "brawlggclone",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.teamselfton.brawlgg"
+      "bundleIdentifier": "com.teamselfton.brawlggclone"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#061224"
       },
-      "package": "com.teamselfton.brawlgg",
+      "package": "com.teamselfton.brawlggclone",
       "edgeToEdgeEnabled": true
     },
     "web": {

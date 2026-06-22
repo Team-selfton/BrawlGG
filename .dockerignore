@@ -1,0 +1,11 @@
+.git
+.DS_Store
+.env
+node_modules
+apps/mobile/node_modules
+apps/mobile-clone/node_modules
+apps/mobile/.expo
+apps/mobile-clone/.expo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*

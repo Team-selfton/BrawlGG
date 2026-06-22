@@ -63,7 +63,8 @@ npm run dev
 
 3. 접속
 
-- [http://localhost:3000](http://localhost:3000)
+- 운영 서버: [https://brawlgg-server.dsmhs.kr](https://brawlgg-server.dsmhs.kr)
+- 로컬 서버: [http://localhost:3000](http://localhost:3000)
 
 ## 모바일 앱 실행 (Expo)
 
@@ -76,8 +77,8 @@ npm run start
 - iOS 시뮬레이터: `npm run ios`
 - Android 에뮬레이터: `npm run android`
 
-모바일 앱에서 API 주소는 앱 내 설정 카드에서 변경할 수 있습니다.
-실기기 테스트 시 `http://127.0.0.1:3000` 대신 개발 PC의 LAN IP를 사용하세요.
+모바일 앱 기본 API 주소는 `https://brawlgg-server.dsmhs.kr`로 설정되어 있습니다.
+필요하면 앱 내 설정 카드에서 API 주소를 변경할 수 있습니다.
 
 ## 전적/통계/랭킹/배틀로그 조회 세팅
 
@@ -132,8 +133,10 @@ npm run start
 
 ## Swagger 문서
 
-- Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)
-- OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
+- 운영 Swagger UI: [https://brawlgg-server.dsmhs.kr/docs](https://brawlgg-server.dsmhs.kr/docs)
+- 운영 OpenAPI JSON: [https://brawlgg-server.dsmhs.kr/api/docs/openapi.json](https://brawlgg-server.dsmhs.kr/api/docs/openapi.json)
+- 로컬 Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)
+- 로컬 OpenAPI JSON: [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
 
 ## 모바일 출시 (EAS Build)
 
@@ -161,20 +164,20 @@ npx eas build -p android --profile production
 ### 빠른 확인 예시
 
 ```bash
-curl http://127.0.0.1:3000/api/player/2PP
-curl http://127.0.0.1:3000/api/player/2PP/overview
-curl http://127.0.0.1:3000/api/player/2PP/battlelog
-curl http://127.0.0.1:3000/api/club/YQ0L8C
-curl http://127.0.0.1:3000/api/club/YQ0L8C/members
-curl "http://127.0.0.1:3000/api/rankings/players?country=kr&limit=20"
-curl "http://127.0.0.1:3000/api/rankings/clubs?country=global&limit=20"
-curl "http://127.0.0.1:3000/api/rankings/brawlers?country=global&brawlerId=16000000&limit=20"
-curl "http://127.0.0.1:3000/api/locations?limit=50"
-curl "http://127.0.0.1:3000/api/locations/global"
-curl "http://127.0.0.1:3000/api/events"
-curl "http://127.0.0.1:3000/api/events/rotation"
-curl "http://127.0.0.1:3000/api/brawlers/16000000"
-curl "http://127.0.0.1:3000/api/players/multi?tags=2PP,8Q8,YQ9U"
+curl https://brawlgg-server.dsmhs.kr/api/player/2PP
+curl https://brawlgg-server.dsmhs.kr/api/player/2PP/overview
+curl https://brawlgg-server.dsmhs.kr/api/player/2PP/battlelog
+curl https://brawlgg-server.dsmhs.kr/api/club/YQ0L8C
+curl https://brawlgg-server.dsmhs.kr/api/club/YQ0L8C/members
+curl "https://brawlgg-server.dsmhs.kr/api/rankings/players?country=kr&limit=20"
+curl "https://brawlgg-server.dsmhs.kr/api/rankings/clubs?country=global&limit=20"
+curl "https://brawlgg-server.dsmhs.kr/api/rankings/brawlers?country=global&brawlerId=16000000&limit=20"
+curl "https://brawlgg-server.dsmhs.kr/api/locations?limit=50"
+curl "https://brawlgg-server.dsmhs.kr/api/locations/global"
+curl "https://brawlgg-server.dsmhs.kr/api/events"
+curl "https://brawlgg-server.dsmhs.kr/api/events/rotation"
+curl "https://brawlgg-server.dsmhs.kr/api/brawlers/16000000"
+curl "https://brawlgg-server.dsmhs.kr/api/players/multi?tags=2PP,8Q8,YQ9U"
 ```
 
 `/api/player/:tag` 응답으로 트로피, 최고 트로피, 레벨, 3v3 승리, 솔로/듀오 승리 등 통계를 확인할 수 있습니다.

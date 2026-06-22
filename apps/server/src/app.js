@@ -49,7 +49,7 @@ function createApp() {
     oauthStateStore,
     jwtTokenService,
     refreshSessionStore,
-    mobileAppScheme: config.auth.mobile.appScheme
+    mobileAppSchemes: config.auth.mobile.appSchemes
   });
   const openApiSpec = createOpenApiSpec({
     appBaseUrl: config.server.appBaseUrl,

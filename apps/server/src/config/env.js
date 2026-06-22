@@ -6,6 +6,23 @@ function toBoolean(rawValue, fallback) {
   return rawValue.toLowerCase() === "true";
 }
 
+function parseMobileAppSchemes(rawValue) {
+  const values = String(rawValue || "brawlgg")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!values.includes("brawlgg")) {
+    values.unshift("brawlgg");
+  }
+
+  if (!values.includes("brawlggclone")) {
+    values.push("brawlggclone");
+  }
+
+  return Array.from(new Set(values));
+}
+
 function loadConfig(env = process.env) {
   const port = Number(env.PORT || 3000);
   const host = env.HOST || "127.0.0.1";
@@ -51,9 +68,7 @@ function loadConfig(env = process.env) {
     auth: {
       requireLoginForApi: toBoolean(env.REQUIRE_LOGIN_FOR_API || "false", false),
       mobile: {
-        appScheme: String(env.MOBILE_APP_SCHEME || "brawlgg")
-          .trim()
-          .toLowerCase()
+        appSchemes: parseMobileAppSchemes(env.MOBILE_APP_SCHEME)
       },
       jwt: {
         secret: jwtSecret,

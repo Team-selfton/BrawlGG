@@ -9,7 +9,10 @@
     "start:legacy": "node server.js",
     "mobile:start": "cd apps/mobile && npm run start",
     "mobile:ios": "cd apps/mobile && npm run ios",
-    "mobile:android": "cd apps/mobile && npm run android"
+    "mobile:android": "cd apps/mobile && npm run android",
+    "mobile-clone:start": "cd apps/mobile-clone && npm run start",
+    "mobile-clone:ios": "cd apps/mobile-clone && npm run ios",
+    "mobile-clone:android": "cd apps/mobile-clone && npm run android"
   },
   "engines": {
     "node": ">=18"

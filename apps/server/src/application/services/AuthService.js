@@ -7,15 +7,13 @@ class AuthService {
     oauthStateStore,
     jwtTokenService,
     refreshSessionStore,
-    mobileAppScheme = "brawlgg"
+    mobileAppSchemes = ["brawlgg"]
   }) {
     this.oauthClient = oauthClient;
     this.oauthStateStore = oauthStateStore;
     this.jwtTokenService = jwtTokenService;
     this.refreshSessionStore = refreshSessionStore;
-    this.mobileAppScheme = String(mobileAppScheme || "brawlgg")
-      .trim()
-      .toLowerCase();
+    this.mobileAppSchemes = normalizeMobileAppSchemes(mobileAppSchemes);
   }
 
   getAuthStatus(req) {
@@ -199,7 +197,8 @@ class AuthService {
     if (!returnTo || typeof returnTo !== "string") return "/";
 
     const trimmed = returnTo.trim();
-    if (trimmed.toLowerCase().startsWith(`${this.mobileAppScheme}://`)) {
+    const normalized = trimmed.toLowerCase();
+    if (this.mobileAppSchemes.some((scheme) => normalized.startsWith(`${scheme}://`))) {
       return trimmed;
     }
 
@@ -207,6 +206,15 @@ class AuthService {
     if (trimmed.startsWith("//")) return "/";
     return trimmed;
   }
+}
+
+function normalizeMobileAppSchemes(rawSchemes) {
+  const items = Array.isArray(rawSchemes) ? rawSchemes : [rawSchemes];
+  const normalized = items
+    .map((value) => String(value || "").trim().toLowerCase())
+    .filter(Boolean);
+
+  return normalized.length ? Array.from(new Set(normalized)) : ["brawlgg"];
 }
 
 module.exports = { AuthService };
